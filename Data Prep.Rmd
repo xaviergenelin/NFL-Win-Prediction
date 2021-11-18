@@ -1,0 +1,26 @@
+
+# Load in Data
+```{r}
+library(tidyverse)
+classData <- read_csv("data/scoresFull.csv")
+
+```
+
+
+# Test Season 2009
+```{r}
+testSeason <- classData %>% filter(season == 2009) %>% select(!c( "date", "day", "AQ1", "AQ2", "AQ3", "AQ4", "AOT", "AOT2", "HQ1", "HQ2", "HQ3", "HQ4", "HOT", "HOT2", "stadium", "startTime", "toss", "roof", "surface", "duration", "attendance", "weather", "vegasLine", "OU", "OUvalue", "OUresult", "HminusAScore", "homeSpread")) %>% mutate(week = ifelse(week == "WildCard", "remove", ifelse(week == "Division", "remove", ifelse(week == "ConfChamp", "remove", ifelse(week == "SuperBowl", "remove", week)))))
+```
+
+```{r}
+home <- testSeason %>% select(!c(awayTeam, AFinal, HFinal)) %>% rename(OfftotalYds = HtotalYds, DefTotalYds = AtotalYds, Team = homeTeam) %>% filter(week != "remove") 
+away <- testSeason %>% select(!c(homeTeam, AFinal, HFinal)) %>% rename(OfftotalYds = AtotalYds, DefTotalYds = HtotalYds, Team = awayTeam) %>% filter(week != "remove") 
+
+data <- rbind(away, home)
+```
+
+```{r}
+check <- data %>% group_by(Team) %>% summarise(OffYds = sum(OfftotalYds), DefYds = sum(DefTotalYds))
+check
+```
+
