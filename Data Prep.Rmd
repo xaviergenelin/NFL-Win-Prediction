@@ -9,8 +9,7 @@ originalData <- read_csv("data/scoresFull.csv")
 Remove unnecessary columns that aren't being used in the analysis
 
 ```{r}
-filteredData <- originalData %>% 
-  filter(season == 2009 | season == 2010) %>% 
+filteredData <- originalData %>%
   select(!c( "date", "day", "AQ1", "AQ2", "AQ3", "AQ4", "AOT", "AOT2", 
              "HQ1", "HQ2", "HQ3", "HQ4", "HOT", "HOT2", "stadium", "startTime", 
              "toss", "roof", "surface", "duration", "attendance", "weather", 
