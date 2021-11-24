@@ -126,6 +126,39 @@ shinyUI(navbarPage(
             selected = "histogram"
           ),
           
+          # histogram/first plot options
+          conditionalPanel(
+            # condition for the plot type
+            condition = "input.plotType == 'histogram'",
+            
+            # some option for whatever this plot is going to be
+            selectInput(
+              inputId = "histVars",
+              label = "Are you sure about that?",
+              choices = c("Yes", "No")
+            )
+          ),
+          
+          # scatter plot options
+          conditionalPanel(
+            # condition for the plot type
+            condition = "input.plotType == 'scatterPlot'",
+            
+            # select the x variable for the scatter plot
+            selectInput(
+              inputId = "xVar",
+              label = "Select an X variable",
+              choices = c("1", "2"),
+            ),
+            
+            # select the y variable for the scatter plot
+            selectInput(
+              inputId = "yVar",
+              label = "Select a Y variable",
+              choices = c("3", "4")
+            )
+          ),
+          
           radioButtons(
             inputId = "summaryType",
             label = "Summary Type",
@@ -133,6 +166,27 @@ shinyUI(navbarPage(
             choiceValues = c("numeric", "other"),
             choiceNames = c("Numeric", "Second Summary"),
             selected = "numeric"
+          ),
+          
+          # numeric summary options
+          conditionalPanel(
+            condition = "input.summaryType == 'numeric'",
+            
+            selectInput(
+              inputId = "numVars",
+              label = "Select the variable(s) to summarize",
+              choices = c("Vikings", "Who Cares")
+            )
+          ),
+          
+          conditionalPanel(
+            condition = "input.summaryType == 'other'",
+            
+            selectInput(
+              inputId = "otherVars",
+              label = "What summary is this going to be?",
+              choices = c("No idea", "Kind of have an idea", "Lol I have no clue")
+            )
           )
           
         ),
