@@ -5,8 +5,18 @@
 #
 
 library(shiny)
+library(tidyverse)
+library(DT)
+library(shinyWidgets)
 
+# link to the dataset
 originalDataLink <- "https://www4.stat.ncsu.edu/~online/datasets/"
+
+# the original nfl data
+#gameData <- read_csv("")
+
+# the manipulated nfl data
+nflData <- read_csv("data/nflData.csv")
 
 # Define UI for application that draws a histogram
 shinyUI(navbarPage(
@@ -15,7 +25,7 @@ shinyUI(navbarPage(
   # create tabs for the sections
   tabsetPanel(
     
-      # About tab
+    ##### About tab
       tabPanel(
         title = "About",
         
@@ -32,7 +42,7 @@ shinyUI(navbarPage(
           
           h3("Data"),
           # original data set information
-          "The data comes from the 2002-2016 seasons and has both regular and postseason games in each season. 
+          "The data comes from the 2002-2014 seasons and has both regular and postseason games in each season. 
           The data was extracted from ESPN using web scraping and the file can be located",
           a(href = originalDataLink, "here"),
           " under scoresFull.csv",
@@ -56,17 +66,84 @@ shinyUI(navbarPage(
 
       ),
       
-      # Data tab
+      ##### Data tab
       tabPanel(
-        title = "Data"
+        title = "Data",
+        
+        sidebarPanel(
+          # possibly give the user the option to choose the original game data or the team data
+          ## the data is the same but displayed in two different ways 
+          pickerInput(
+            inputId = "teamFilter",
+            label = "Select the team(s)",
+            choices = unique(nflData$Team),
+            selected = unique(nflData$Team),
+            multiple = TRUE,
+            options = pickerOptions(actionsBox = TRUE,
+                                    liveSearch = TRUE),
+          ),
+          
+          pickerInput(
+            inputId = "seasonFilter",
+            label = "Select season(s)",
+            choices = unique(nflData$season),
+            selected = unique(nflData$season),
+            multiple = TRUE,
+            options = pickerOptions(actionsBox = TRUE)
+          ),
+          
+          pickerInput(
+            inputId = "weekFilter",
+            label = "Select week(s)",
+            choices = unique(nflData$week),
+            selected = unique(nflData$week),
+            multiple = TRUE,
+            options = pickerOptions(actionsBox = TRUE)
+          ),
+          
+          downloadButton("downloadData", "Download")
+        ),
+        
+        mainPanel(
+          dataTableOutput("dataTable")
+        )
       ),
     
-      # Data Exploration tab
+      ##### Data Exploration tab
       tabPanel(
-        title = "Data Exploration"
+        title = "Data Exploration",
+        
+        # data exploration side bar
+        sidebarPanel(
+          
+          # type of graphical summaries
+          radioButtons(
+            inputId = "plotType",
+            label = "Plot Type",
+            # histogram and scatter plot for now. Not sure what they'll be
+            choiceValues = c("histogram", "scatterPlot"),
+            choiceNames = c("Histogram", "Scatter Plot"),
+            selected = "histogram"
+          ),
+          
+          radioButtons(
+            inputId = "summaryType",
+            label = "Summary Type",
+            # numeric and something else as the numerical summaries
+            choiceValues = c("numeric", "other"),
+            choiceNames = c("Numeric", "Second Summary"),
+            selected = "numeric"
+          )
+          
+        ),
+        
+        # data exploration main panel
+        mainPanel(
+          
+        )
       ),
     
-      # Modeling tab
+      #####  Modeling tab
       navbarMenu(
         title = "Modeling",
       
