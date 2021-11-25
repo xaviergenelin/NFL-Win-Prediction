@@ -2,7 +2,6 @@
 ```{r}
 library(tidyverse)
 originalData <- read_csv("data/scoresFull.csv")
-
 ```
 
 
@@ -28,7 +27,7 @@ First we split the data into two different groups, away teams and home teams. Th
 home <- filteredData %>%
   mutate(win = ifelse(HFinal > AFinal, 1, 0)) %>%
   select(!c(awayTeam, HFinal, AFinal, awayTOP)) %>%
-  rename(Team = homeTeam, top = homeTOP) %>%
+  rename(team = homeTeam, top = homeTOP) %>%
   rename_at(vars(starts_with("home")), funs(paste0("off", substring(., 5)))) %>%
   rename_at(vars(starts_with("away")), funs(paste0("def", substring(., 5)))) %>%
   rename_at(vars(starts_with("H")), funs(paste0("off", substring(., 2)))) %>%
@@ -37,178 +36,183 @@ home <- filteredData %>%
 away <- filteredData %>%
   mutate(win = ifelse(AFinal > HFinal, 1, 0)) %>%
   select(!c(homeTeam, HFinal, AFinal, homeTOP)) %>%
-  rename(Team = awayTeam, top = awayTOP) %>%
+  rename(team = awayTeam, top = awayTOP) %>%
   rename_at(vars(starts_with("home")), funs(paste0("def", substring(., 5)))) %>%
   rename_at(vars(starts_with("away")), funs(paste0("off", substring(., 5)))) %>%
   rename_at(vars(starts_with("H")), funs(paste0("def", substring(., 2)))) %>%
   rename_at(vars(starts_with("A")), funs(paste0("off", substring(., 2))))
 
-data <- rbind(home, away) %>% 
-  arrange(Team, season, week) %>% 
-  group_by(Team) %>% 
-  mutate(teamRow = row_number())
+data <- rbind(home, away)
+```
+
+```{r}
+# data <- rbind(home, away) %>% 
+#   arrange(team, season, week) %>% 
+#   group_by(team) %>% 
+#   mutate(teamRow = row_number())
 ```
 
 This code takes the cumulative average throughout a season for each offensive and defensive statistic and the time of possession.
 
 ```{r}
-avgData <- data %>% 
-  group_by(Team, season) %>%
-  mutate(across(starts_with("def"), ~ cummean(.)),
-         across(starts_with("off"), ~ cummean(.)),
-         avgTOP = cummean(top)) %>%
-  rename_at(vars(starts_with("off")), funs(paste0("avg", .))) %>%
-  rename_at(vars(starts_with("def")), funs(paste0("avg", .))) %>%
-  select(-top)
+# avgData <- data %>% 
+#   group_by(team, season) %>%
+#   mutate(across(starts_with("def"), ~ cummean(.)),
+#          across(starts_with("off"), ~ cummean(.)),
+#          avgTOP = cummean(top)) %>%
+#   rename_at(vars(starts_with("off")), funs(paste0("avg", .))) %>%
+#   rename_at(vars(starts_with("def")), funs(paste0("avg", .))) %>%
+#   select(-top)
 ```
 
 ```{r}
-nflData <- merge(data, avgData, by = c("Team", "week", "season", "teamRow", "win"))
-
-nflData <- nflData %>%
-  mutate(offFirstDowns = ifelse(teamRow == 1, offFirstDowns, 
-                                ifelse(week == 1, lag(avgoffFirstDowns, 1),
-                                       avgoffFirstDowns)),
-         offNetPassYds = ifelse(teamRow == 1, offNetPassYds, 
-                                ifelse(week == 1, lag(avgoffNetPassYds, 1),
-                                       avgoffNetPassYds)),
-         offTotalYds = ifelse(teamRow == 1, offTotalYds, 
-                                ifelse(week == 1, lag(avgoffTotalYds, 1),
-                                       avgoffTotalYds)),
-         offTurnovers = ifelse(teamRow == 1, offTurnovers, 
-                                ifelse(week == 1, lag(avgoffTurnovers, 1),
-                                       avgoffTurnovers)),
-         offTotalPlays = ifelse(teamRow == 1, offTotalPlays, 
-                                ifelse(week == 1, lag(avgoffTotalPlays, 1),
-                                       avgoffTotalPlays)),
-         offRushYds = ifelse(teamRow == 1, offRushYds, 
-                                ifelse(week == 1, lag(avgoffRushYds, 1),
-                                       avgoffRushYds)),
-         offRushTD = ifelse(teamRow == 1, offRushTD, 
-                                ifelse(week == 1, lag(avgoffRushTD, 1),
-                                       avgoffRushTD)),
-         offPassComp = ifelse(teamRow == 1, offPassComp, 
-                                ifelse(week == 1, lag(avgoffPassComp, 1),
-                                       avgoffPassComp)),
-         offPassAtt = ifelse(teamRow == 1, offPassAtt, 
-                                ifelse(week == 1, lag(avgoffPassAtt, 1),
-                                       avgoffPassAtt)),
-         offPassYds = ifelse(teamRow == 1, offPassYds, 
-                                ifelse(week == 1, lag(avgoffPassYds, 1),
-                                       avgoffPassYds)),
-         offPassTD = ifelse(teamRow == 1, offPassTD, 
-                                ifelse(week == 1, lag(avgoffPassTD, 1),
-                                       avgoffPassTD)),
-         offPassInt = ifelse(teamRow == 1, offPassInt, 
-                                ifelse(week == 1, lag(avgoffPassInt, 1),
-                                       avgoffPassInt)),
-         offTimesSacked = ifelse(teamRow == 1, offTimesSacked, 
-                                ifelse(week == 1, lag(avgoffTimesSacked, 1),
-                                       avgoffTimesSacked)),
-         offSackYdsLost = ifelse(teamRow == 1, offSackYdsLost, 
-                                ifelse(week == 1, lag(avgoffSackYdsLost, 1),
-                                       avgoffSackYdsLost)),
-         offFum = ifelse(teamRow == 1, offFum, 
-                                ifelse(week == 1, lag(avgoffFum, 1),
-                                       avgoffFum)),
-         offFumLost = ifelse(teamRow == 1, offFumLost, 
-                                ifelse(week == 1, lag(avgoffFumLost, 1),
-                                       avgoffFumLost)),
-         offNumPen = ifelse(teamRow == 1, offNumPen, 
-                                ifelse(week == 1, lag(avgoffNumPen, 1),
-                                       avgoffNumPen)),
-         offPenYds = ifelse(teamRow == 1, offPenYds, 
-                                ifelse(week == 1, lag(avgoffPenYds, 1),
-                                       avgoffPenYds)),
-         off3rdConv = ifelse(teamRow == 1, off3rdConv, 
-                                ifelse(week == 1, lag(avgoff3rdConv, 1),
-                                       avgoff3rdConv)),
-         off3rdAtt = ifelse(teamRow == 1, off3rdAtt, 
-                                ifelse(week == 1, lag(avgoff3rdAtt, 1),
-                                       avgoff3rdAtt)),
-         off4thConv = ifelse(teamRow == 1, off4thConv, 
-                                ifelse(week == 1, lag(avgoff4thConv, 1),
-                                       avgoff4thConv)),
-         off4thAtt = ifelse(teamRow == 1, off4thAtt, 
-                                ifelse(week == 1, lag(avgoff4thAtt, 1),
-                                       avgoff4thAtt)),
-         top = ifelse(teamRow == 1, top, 
-                                ifelse(week == 1, lag(avgTOP, 1),
-                                       avgTOP)),
-         defFirstDowns = ifelse(teamRow == 1, defFirstDowns, 
-                                ifelse(week == 1, lag(avgdefFirstDowns, 1),
-                                       avgdefFirstDowns)),
-         defNetPassYds = ifelse(teamRow == 1, defNetPassYds, 
-                                ifelse(week == 1, lag(avgdefNetPassYds, 1),
-                                       avgdefNetPassYds)),
-         defTotalYds = ifelse(teamRow == 1, defTotalYds, 
-                                ifelse(week == 1, lag(avgdefTotalYds, 1),
-                                       avgdefTotalYds)),
-         defTurnovers = ifelse(teamRow == 1, defTurnovers, 
-                                ifelse(week == 1, lag(avgdefTurnovers, 1),
-                                       avgdefTurnovers)),
-         defTotalPlays = ifelse(teamRow == 1, defTotalPlays, 
-                                ifelse(week == 1, lag(avgdefTotalPlays, 1),
-                                       avgdefTotalPlays)),
-         defRushYds = ifelse(teamRow == 1, defRushYds, 
-                                ifelse(week == 1, lag(avgdefRushYds, 1),
-                                       avgdefRushYds)),
-         defRushTD = ifelse(teamRow == 1, defRushTD, 
-                                ifelse(week == 1, lag(avgdefRushTD, 1),
-                                       avgdefRushTD)),
-         defPassComp = ifelse(teamRow == 1, defPassComp, 
-                                ifelse(week == 1, lag(avgdefPassComp, 1),
-                                       avgdefPassComp)),
-         defPassAtt = ifelse(teamRow == 1, defPassAtt, 
-                                ifelse(week == 1, lag(avgdefPassAtt, 1),
-                                       avgdefPassAtt)),
-         defPassYds = ifelse(teamRow == 1, defPassYds, 
-                                ifelse(week == 1, lag(avgdefPassYds, 1),
-                                       avgdefPassYds)),
-         defPassTD = ifelse(teamRow == 1, defPassTD, 
-                                ifelse(week == 1, lag(avgdefPassTD, 1),
-                                       avgdefPassTD)),
-         defPassInt = ifelse(teamRow == 1, defPassInt, 
-                                ifelse(week == 1, lag(avgdefPassInt, 1),
-                                       avgdefPassInt)),
-         defTimesSacked = ifelse(teamRow == 1, defTimesSacked, 
-                                ifelse(week == 1, lag(avgdefTimesSacked, 1),
-                                       avgdefTimesSacked)),
-         defSackYdsLost = ifelse(teamRow == 1, defSackYdsLost, 
-                                ifelse(week == 1, lag(avgdefSackYdsLost, 1),
-                                       avgdefSackYdsLost)),
-         defFum = ifelse(teamRow == 1, defFum, 
-                                ifelse(week == 1, lag(avgdefFum, 1),
-                                       avgdefFum)),
-         defFumLost = ifelse(teamRow == 1, defFumLost, 
-                                ifelse(week == 1, lag(avgdefFumLost, 1),
-                                       avgdefFumLost)),
-         defNumPen = ifelse(teamRow == 1, defNumPen, 
-                                ifelse(week == 1, lag(avgdefNumPen, 1),
-                                       avgdefNumPen)),
-         defPenYds = ifelse(teamRow == 1, defPenYds, 
-                                ifelse(week == 1, lag(avgdefPenYds, 1),
-                                       avgdefPenYds)),
-         def3rdConv = ifelse(teamRow == 1, def3rdConv, 
-                                ifelse(week == 1, lag(avgdef3rdConv, 1),
-                                       avgdef3rdConv)),
-         def3rdAtt = ifelse(teamRow == 1, def3rdAtt, 
-                                ifelse(week == 1, lag(avgdef3rdAtt, 1),
-                                       avgdef3rdAtt)),
-         def4thConv = ifelse(teamRow == 1, def4thConv, 
-                                ifelse(week == 1, lag(avgdef4thConv, 1),
-                                       avgdef4thConv)),
-         def4thAtt = ifelse(teamRow == 1, def4thAtt, 
-                                ifelse(week == 1, lag(avgdef4thAtt, 1),
-                                       avgdef4thAtt))
-         ) %>%
-  select(-starts_with("avg"))
+# nflData <- merge(data, avgData, by = c("team", "week", "season", "teamRow", "win"))
+# 
+# nflData <- nflData %>%
+#   mutate(offFirstDowns = ifelse(teamRow == 1, offFirstDowns, 
+#                                 ifelse(week == 1, lag(avgoffFirstDowns, 1),
+#                                        avgoffFirstDowns)),
+#          offNetPassYds = ifelse(teamRow == 1, offNetPassYds, 
+#                                 ifelse(week == 1, lag(avgoffNetPassYds, 1),
+#                                        avgoffNetPassYds)),
+#          offTotalYds = ifelse(teamRow == 1, offTotalYds, 
+#                                 ifelse(week == 1, lag(avgoffTotalYds, 1),
+#                                        avgoffTotalYds)),
+#          offTurnovers = ifelse(teamRow == 1, offTurnovers, 
+#                                 ifelse(week == 1, lag(avgoffTurnovers, 1),
+#                                        avgoffTurnovers)),
+#          offTotalPlays = ifelse(teamRow == 1, offTotalPlays, 
+#                                 ifelse(week == 1, lag(avgoffTotalPlays, 1),
+#                                        avgoffTotalPlays)),
+#          offRushYds = ifelse(teamRow == 1, offRushYds, 
+#                                 ifelse(week == 1, lag(avgoffRushYds, 1),
+#                                        avgoffRushYds)),
+#          offRushTD = ifelse(teamRow == 1, offRushTD, 
+#                                 ifelse(week == 1, lag(avgoffRushTD, 1),
+#                                        avgoffRushTD)),
+#          offPassComp = ifelse(teamRow == 1, offPassComp, 
+#                                 ifelse(week == 1, lag(avgoffPassComp, 1),
+#                                        avgoffPassComp)),
+#          offPassAtt = ifelse(teamRow == 1, offPassAtt, 
+#                                 ifelse(week == 1, lag(avgoffPassAtt, 1),
+#                                        avgoffPassAtt)),
+#          offPassYds = ifelse(teamRow == 1, offPassYds, 
+#                                 ifelse(week == 1, lag(avgoffPassYds, 1),
+#                                        avgoffPassYds)),
+#          offPassTD = ifelse(teamRow == 1, offPassTD, 
+#                                 ifelse(week == 1, lag(avgoffPassTD, 1),
+#                                        avgoffPassTD)),
+#          offPassInt = ifelse(teamRow == 1, offPassInt, 
+#                                 ifelse(week == 1, lag(avgoffPassInt, 1),
+#                                        avgoffPassInt)),
+#          offTimesSacked = ifelse(teamRow == 1, offTimesSacked, 
+#                                 ifelse(week == 1, lag(avgoffTimesSacked, 1),
+#                                        avgoffTimesSacked)),
+#          offSackYdsLost = ifelse(teamRow == 1, offSackYdsLost, 
+#                                 ifelse(week == 1, lag(avgoffSackYdsLost, 1),
+#                                        avgoffSackYdsLost)),
+#          offFum = ifelse(teamRow == 1, offFum, 
+#                                 ifelse(week == 1, lag(avgoffFum, 1),
+#                                        avgoffFum)),
+#          offFumLost = ifelse(teamRow == 1, offFumLost, 
+#                                 ifelse(week == 1, lag(avgoffFumLost, 1),
+#                                        avgoffFumLost)),
+#          offNumPen = ifelse(teamRow == 1, offNumPen, 
+#                                 ifelse(week == 1, lag(avgoffNumPen, 1),
+#                                        avgoffNumPen)),
+#          offPenYds = ifelse(teamRow == 1, offPenYds, 
+#                                 ifelse(week == 1, lag(avgoffPenYds, 1),
+#                                        avgoffPenYds)),
+#          off3rdConv = ifelse(teamRow == 1, off3rdConv, 
+#                                 ifelse(week == 1, lag(avgoff3rdConv, 1),
+#                                        avgoff3rdConv)),
+#          off3rdAtt = ifelse(teamRow == 1, off3rdAtt, 
+#                                 ifelse(week == 1, lag(avgoff3rdAtt, 1),
+#                                        avgoff3rdAtt)),
+#          off4thConv = ifelse(teamRow == 1, off4thConv, 
+#                                 ifelse(week == 1, lag(avgoff4thConv, 1),
+#                                        avgoff4thConv)),
+#          off4thAtt = ifelse(teamRow == 1, off4thAtt, 
+#                                 ifelse(week == 1, lag(avgoff4thAtt, 1),
+#                                        avgoff4thAtt)),
+#          top = ifelse(teamRow == 1, top, 
+#                                 ifelse(week == 1, lag(avgTOP, 1),
+#                                        avgTOP)),
+#          defFirstDowns = ifelse(teamRow == 1, defFirstDowns, 
+#                                 ifelse(week == 1, lag(avgdefFirstDowns, 1),
+#                                        avgdefFirstDowns)),
+#          defNetPassYds = ifelse(teamRow == 1, defNetPassYds, 
+#                                 ifelse(week == 1, lag(avgdefNetPassYds, 1),
+#                                        avgdefNetPassYds)),
+#          defTotalYds = ifelse(teamRow == 1, defTotalYds, 
+#                                 ifelse(week == 1, lag(avgdefTotalYds, 1),
+#                                        avgdefTotalYds)),
+#          defTurnovers = ifelse(teamRow == 1, defTurnovers, 
+#                                 ifelse(week == 1, lag(avgdefTurnovers, 1),
+#                                        avgdefTurnovers)),
+#          defTotalPlays = ifelse(teamRow == 1, defTotalPlays, 
+#                                 ifelse(week == 1, lag(avgdefTotalPlays, 1),
+#                                        avgdefTotalPlays)),
+#          defRushYds = ifelse(teamRow == 1, defRushYds, 
+#                                 ifelse(week == 1, lag(avgdefRushYds, 1),
+#                                        avgdefRushYds)),
+#          defRushTD = ifelse(teamRow == 1, defRushTD, 
+#                                 ifelse(week == 1, lag(avgdefRushTD, 1),
+#                                        avgdefRushTD)),
+#          defPassComp = ifelse(teamRow == 1, defPassComp, 
+#                                 ifelse(week == 1, lag(avgdefPassComp, 1),
+#                                        avgdefPassComp)),
+#          defPassAtt = ifelse(teamRow == 1, defPassAtt, 
+#                                 ifelse(week == 1, lag(avgdefPassAtt, 1),
+#                                        avgdefPassAtt)),
+#          defPassYds = ifelse(teamRow == 1, defPassYds, 
+#                                 ifelse(week == 1, lag(avgdefPassYds, 1),
+#                                        avgdefPassYds)),
+#          defPassTD = ifelse(teamRow == 1, defPassTD, 
+#                                 ifelse(week == 1, lag(avgdefPassTD, 1),
+#                                        avgdefPassTD)),
+#          defPassInt = ifelse(teamRow == 1, defPassInt, 
+#                                 ifelse(week == 1, lag(avgdefPassInt, 1),
+#                                        avgdefPassInt)),
+#          defTimesSacked = ifelse(teamRow == 1, defTimesSacked, 
+#                                 ifelse(week == 1, lag(avgdefTimesSacked, 1),
+#                                        avgdefTimesSacked)),
+#          defSackYdsLost = ifelse(teamRow == 1, defSackYdsLost, 
+#                                 ifelse(week == 1, lag(avgdefSackYdsLost, 1),
+#                                        avgdefSackYdsLost)),
+#          defFum = ifelse(teamRow == 1, defFum, 
+#                                 ifelse(week == 1, lag(avgdefFum, 1),
+#                                        avgdefFum)),
+#          defFumLost = ifelse(teamRow == 1, defFumLost, 
+#                                 ifelse(week == 1, lag(avgdefFumLost, 1),
+#                                        avgdefFumLost)),
+#          defNumPen = ifelse(teamRow == 1, defNumPen, 
+#                                 ifelse(week == 1, lag(avgdefNumPen, 1),
+#                                        avgdefNumPen)),
+#          defPenYds = ifelse(teamRow == 1, defPenYds, 
+#                                 ifelse(week == 1, lag(avgdefPenYds, 1),
+#                                        avgdefPenYds)),
+#          def3rdConv = ifelse(teamRow == 1, def3rdConv, 
+#                                 ifelse(week == 1, lag(avgdef3rdConv, 1),
+#                                        avgdef3rdConv)),
+#          def3rdAtt = ifelse(teamRow == 1, def3rdAtt, 
+#                                 ifelse(week == 1, lag(avgdef3rdAtt, 1),
+#                                        avgdef3rdAtt)),
+#          def4thConv = ifelse(teamRow == 1, def4thConv, 
+#                                 ifelse(week == 1, lag(avgdef4thConv, 1),
+#                                        avgdef4thConv)),
+#          def4thAtt = ifelse(teamRow == 1, def4thAtt, 
+#                                 ifelse(week == 1, lag(avgdef4thAtt, 1),
+#                                        avgdef4thAtt))
+#          ) %>%
+#   select(-starts_with("avg"))
 ```
 
 ```{r}
-nflData <- nflData %>% arrange(Team, season, week)
+nflData <- data %>% mutate(week = as.factor(week)) %>% arrange(team, season, week)
 
 write_csv(nflData, "data/nflData.csv")
 ```
+
 
 
