@@ -76,8 +76,8 @@ shinyUI(navbarPage(
           pickerInput(
             inputId = "teamFilter",
             label = "Select the team(s)",
-            choices = unique(nflData$Team),
-            selected = unique(nflData$Team),
+            choices = unique(nflData$team),
+            selected = unique(nflData$team),
             multiple = TRUE,
             options = pickerOptions(actionsBox = TRUE,
                                     liveSearch = TRUE),
@@ -116,7 +116,41 @@ shinyUI(navbarPage(
         # data exploration side bar
         sidebarPanel(
           
-          # type of graphical summaries
+          ### Variables for all graphs/summaries
+          h3("Universal Variables"),
+          
+          pickerInput(
+            inputId = "teamsFilter",
+            label = "Team(s)",
+            choices = unique(nflData$team),
+            selected = unique(nflData$team),
+            multiple = TRUE,
+            options = pickerOptions(actionsBox = TRUE,
+                                    liveSearch = TRUE)
+          ),
+          
+          pickerInput(
+            inputId = "seasonsFilter",
+            label = "Season(s)",
+            choices = unique(nflData$season),
+            selected = unique(nflData$season),
+            multiple = TRUE,
+            options = pickerOptions(actionsBox = TRUE)
+          ),
+          
+          pickerInput(
+            inputId = "weeksFilter",
+            label = "Week(s)",
+            choices = unique(nflData$week),
+            selected = unique(nflData$week),
+            multiple = TRUE,
+            options = pickerOptions(actionsBox = TRUE)
+          ),
+          
+          ### graph inputs
+          h3("Graph Options"),
+          
+          ### type of graphical summaries
           radioButtons(
             inputId = "plotType",
             label = "Plot Type",
@@ -159,6 +193,9 @@ shinyUI(navbarPage(
             )
           ),
           
+          h3("Numerical Options"),
+          
+          ### summary options
           radioButtons(
             inputId = "summaryType",
             label = "Summary Type",
@@ -172,10 +209,16 @@ shinyUI(navbarPage(
           conditionalPanel(
             condition = "input.summaryType == 'numeric'",
             
-            selectInput(
+            # select the variables for the numeric summary table
+            pickerInput(
               inputId = "numVars",
               label = "Select the variable(s) to summarize",
-              choices = c("Vikings", "Who Cares")
+              # excludes week, season, team, win columns
+              choices = colnames(nflData)[4:50],
+              selected = colnames(nflData)[4:50],
+              multiple = TRUE,
+              options = pickerOptions(actionsBox = TRUE,
+                                      liveSearch = TRUE)
             )
           ),
           
@@ -193,7 +236,14 @@ shinyUI(navbarPage(
         
         # data exploration main panel
         mainPanel(
+          # graphs
           
+          
+          # numeric summaries
+          conditionalPanel(
+            condition = "input.summaryType == 'numeric'",
+            dataTableOutput("numericSummary")
+          )
         )
       ),
     
