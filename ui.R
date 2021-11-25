@@ -8,6 +8,7 @@ library(shiny)
 library(tidyverse)
 library(DT)
 library(shinyWidgets)
+library(plotly)
 
 # link to the dataset
 originalDataLink <- "https://www4.stat.ncsu.edu/~online/datasets/"
@@ -101,6 +102,16 @@ shinyUI(navbarPage(
             options = pickerOptions(actionsBox = TRUE)
           ),
           
+          pickerInput(
+            inputId = "columnFilter",
+            label = "Select column(s)",
+            choices = colnames(nflData),
+            selected = colnames(nflData),
+            multiple = TRUE,
+            options = pickerOptions(actionsBox = TRUE,
+                                    liveSearch = TRUE)
+          ),
+          
           downloadButton("downloadData", "Download")
         ),
         
@@ -182,14 +193,16 @@ shinyUI(navbarPage(
             selectInput(
               inputId = "xVar",
               label = "Select an X variable",
-              choices = c("1", "2"),
+              choices = colnames(nflData)[4:50],
+              selected = "offTotalYds"
             ),
             
             # select the y variable for the scatter plot
             selectInput(
               inputId = "yVar",
               label = "Select a Y variable",
-              choices = c("3", "4")
+              choices = colnames(nflData)[4:50],
+              selected = "defTotalYds"
             )
           ),
           
@@ -237,7 +250,10 @@ shinyUI(navbarPage(
         # data exploration main panel
         mainPanel(
           # graphs
-          
+          conditionalPanel(
+            condition = "input.plotType == 'scatterPlot'",
+            plotlyOutput("scatterPlot")
+          ),
           
           # numeric summaries
           conditionalPanel(
