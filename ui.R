@@ -300,61 +300,93 @@ shinyUI(navbarPage(
         # model fitting tab within modeling
         tabPanel(
           title = "Model Fitting",
-          
-          selectInput(
-            inputId = "seasonModel",
-            label = "Select a season",
-            choices = unique(teamData$season),
-            selected = "2014",
-            multiple = FALSE
+          sidebarPanel(
+            
+            numericInput(
+              inputId = "seed",
+              label = "Select a seed for replication",
+              value = 55,
+              min = -1000,
+              max = 1000,
+              step = 1
+            ),
+            
+            selectInput(
+              inputId = "seasonModel",
+              label = "Select a season",
+              choices = unique(teamData$season),
+              selected = "2014",
+              multiple = FALSE
+            ),
+            
+            # this is the week that'll be predicted, must be at least 2 to ensure that there is data from
+            # the same season to be used as training
+            numericInput(
+              inputId = "weekModel",
+              label = "Please select a week to predict",
+              value = 8,
+              min = 2,
+              max = 21,
+              step = 1
+            ),
+            
+            # uses the input from weekModel to limit what the user can select
+            uiOutput("trainWeeksInput"),
+            
+            h3("Logistic Regression"),
+            
+            selectInput(
+              inputId = "logVars",
+              label = "Select the variables to use in the logistic model",
+              choices = colnames(teamData),
+              selected = colnames(teamData),
+              multiple = TRUE
+            ),
+            
+            h3("Random Forest"),
+            
+            selectInput(
+              inputId = "rfVars",
+              label = "Select the variables to use in the random forest model",
+              choices = colnames(teamData),
+              selected = colnames(teamData),
+              multiple = TRUE
+            ),
+            
+            h3("Tree"),
+            selectInput(
+              inputId = "treeVars",
+              label = "Select the variables to use in the tree model",
+              choices = colnames(teamData),
+              selected = colnames(teamData),
+              multiple = TRUE
+            )
+            
           ),
           
-          numericInput(
-            inputId = "weekModel",
-            label = "Please select a week to predict",
-            value = 8,
-            min = 3,
-            max = 21,
-            step = 1
-          ),
-          
-          numericInput(
-            inputId = "trainWeeks",
-            label = "Select the number of weeks to use as training",
-            value = 4,
-            min = 2, 
-            max = 8,
-            step = 1
-          ),
-          
-          selectInput(
-            inputId = "logVars",
-            label = "Select the variables to use in the logistic model",
-            choices = colnames(teamData),
-            selected = colnames(teamData),
-            multiple = TRUE
-          ),
-          
-          selectInput(
-            inputId = "rfVars",
-            label = "Select the variables to use in the random forest model",
-            choices = colnames(teamData),
-            selected = colnames(teamData),
-            multiple = TRUE
-          ),
-          
-          selectInput(
-            inputId = "treeVars",
-            label = "Select the variables to use in the tree model",
-            choices = colnames(teamData),
-            selected = colnames(teamData),
-            multiple = TRUE
+          mainPanel(
+            
           )
+
         ),
         
         # prediction tab within modeling
         tabPanel(
-          title = "Prediction"
+          title = "Prediction",
+          
+          sidebarPanel(
+            radioButtons(
+              inputId = "modelType",
+              label = "Choose a Model to Predict",
+              choiceNames = c(
+                "Logistic Regression",
+                "Random Forest",
+                "Classification Tree"
+              ),
+              choiceValues = c("logReg", "randFor", "classTree"),
+              selected = "logReg"
+            )
+          )
         )
       
       )

@@ -89,6 +89,28 @@ shinyServer(function(input, output,session) {
     
     as.data.frame(t(numericSum))
   })
+  
+  #####################
+  # Data Modeling Tab #
+  #####################
+  
+  #################
+  # Model Fitting #
+  #################
+  
+  output$trainWeeksInput <- renderUI({
+    
+    numericInput(
+      inputId = "trainWeeks",
+      label = "Select the number of weeks to use as training",
+      value = input$weekModel - 1,
+      # use 2 weeks of training to ensure that a team will have data if they select a time during a team's bye week
+      # if they want to predict for week 2 then they can only use week 1 data for training
+      min = ifelse(input$weekModel == 2, 1, 2), 
+      max = input$weekModel - 1,
+      step = 1
+    )
+  })
 
 })
 
