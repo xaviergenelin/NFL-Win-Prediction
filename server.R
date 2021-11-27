@@ -8,9 +8,10 @@ library(shiny)
 library(DT)
 library(plotly)
 
-nflData <- read_csv("data/nflData.csv")
+teamData <- read_csv("data/teamData.csv")
 
-nflData$win <- as.factor(nflData$win)
+teamData$win <- as.factor(teamData$win)
+teamData$week <- as.numeric(teamData$week)
 
 # Define server logic required to draw a histogram
 shinyServer(function(input, output,session) {
@@ -21,11 +22,12 @@ shinyServer(function(input, output,session) {
   
   # subset the data on the data tab if the user wants any specific filters
   newData <- reactive({
-    newData <- nflData %>% 
+    newData <- teamData %>% 
       filter(season %in% input$seasonFilter,
              team %in% input$teamFilter,
              week %in% input$weekFilter) %>%
-      select(input$columnFilter)
+      select(input$columnFilter) %>%
+      arrange(season, team, week)
   })
   
   # data table in the data tab
@@ -41,7 +43,7 @@ shinyServer(function(input, output,session) {
       paste("data.csv")
     },
     content = function(file){
-      write.csv(nflData %>% filter(season %in% input$seasonFilter,
+      write.csv(teamData %>% filter(season %in% input$seasonFilter,
                                    team %in% input$teamFilter,
                                    week %in% input$weekFilter),
                 file,
@@ -57,7 +59,7 @@ shinyServer(function(input, output,session) {
   
   # scatter plot 
   output$scatterPlot <- renderPlotly({
-    filteredData <- nflData %>%
+    filteredData <- teamData %>%
       filter(team %in% input$teamsFilter,
              season %in% input$seasonsFilter,
              week %in% input$weeksFilter) %>%
@@ -76,7 +78,7 @@ shinyServer(function(input, output,session) {
   output$numericSummary <- renderDT({
     
     # filter the data based on the universal filters and remove the week, season, and team columns
-    filteredData <- nflData %>%
+    filteredData <- teamData %>%
       filter(team %in% input$teamsFilter,
              season %in% input$seasonsFilter,
              week %in% input$weeksFilter) %>%

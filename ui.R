@@ -17,7 +17,9 @@ originalDataLink <- "https://www4.stat.ncsu.edu/~online/datasets/"
 #gameData <- read_csv("")
 
 # the manipulated nfl data
-nflData <- read_csv("data/nflData.csv")
+teamData <- read_csv("data/teamData.csv")
+
+weeks <- c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21)
 
 # Define UI for application that draws a histogram
 shinyUI(navbarPage(
@@ -77,8 +79,8 @@ shinyUI(navbarPage(
           pickerInput(
             inputId = "teamFilter",
             label = "Select the team(s)",
-            choices = unique(nflData$team),
-            selected = unique(nflData$team),
+            choices = unique(teamData$team),
+            selected = unique(teamData$team),
             multiple = TRUE,
             options = pickerOptions(actionsBox = TRUE,
                                     liveSearch = TRUE),
@@ -87,8 +89,8 @@ shinyUI(navbarPage(
           pickerInput(
             inputId = "seasonFilter",
             label = "Select season(s)",
-            choices = unique(nflData$season),
-            selected = unique(nflData$season),
+            choices = unique(teamData$season),
+            selected = unique(teamData$season),
             multiple = TRUE,
             options = pickerOptions(actionsBox = TRUE)
           ),
@@ -96,8 +98,8 @@ shinyUI(navbarPage(
           pickerInput(
             inputId = "weekFilter",
             label = "Select week(s)",
-            choices = unique(nflData$week),
-            selected = unique(nflData$week),
+            choices = weeks,
+            selected = weeks,
             multiple = TRUE,
             options = pickerOptions(actionsBox = TRUE)
           ),
@@ -105,8 +107,8 @@ shinyUI(navbarPage(
           pickerInput(
             inputId = "columnFilter",
             label = "Select column(s)",
-            choices = colnames(nflData),
-            selected = colnames(nflData),
+            choices = colnames(teamData),
+            selected = colnames(teamData),
             multiple = TRUE,
             options = pickerOptions(actionsBox = TRUE,
                                     liveSearch = TRUE)
@@ -133,8 +135,8 @@ shinyUI(navbarPage(
           pickerInput(
             inputId = "teamsFilter",
             label = "Team(s)",
-            choices = unique(nflData$team),
-            selected = unique(nflData$team),
+            choices = unique(teamData$team),
+            selected = unique(teamData$team),
             multiple = TRUE,
             options = pickerOptions(actionsBox = TRUE,
                                     liveSearch = TRUE)
@@ -143,8 +145,8 @@ shinyUI(navbarPage(
           pickerInput(
             inputId = "seasonsFilter",
             label = "Season(s)",
-            choices = unique(nflData$season),
-            selected = unique(nflData$season),
+            choices = unique(teamData$season),
+            selected = unique(teamData$season),
             multiple = TRUE,
             options = pickerOptions(actionsBox = TRUE)
           ),
@@ -152,8 +154,8 @@ shinyUI(navbarPage(
           pickerInput(
             inputId = "weeksFilter",
             label = "Week(s)",
-            choices = unique(nflData$week),
-            selected = unique(nflData$week),
+            choices = weeks,
+            selected = weeks,
             multiple = TRUE,
             options = pickerOptions(actionsBox = TRUE)
           ),
@@ -193,7 +195,7 @@ shinyUI(navbarPage(
             selectInput(
               inputId = "xVar",
               label = "Select an X variable",
-              choices = colnames(nflData)[4:50],
+              choices = colnames(teamData)[4:50],
               selected = "offTotalYds"
             ),
             
@@ -201,7 +203,7 @@ shinyUI(navbarPage(
             selectInput(
               inputId = "yVar",
               label = "Select a Y variable",
-              choices = colnames(nflData)[4:50],
+              choices = colnames(teamData)[4:50],
               selected = "defTotalYds"
             )
           ),
@@ -227,8 +229,8 @@ shinyUI(navbarPage(
               inputId = "numVars",
               label = "Select the variable(s) to summarize",
               # excludes week, season, team, win columns
-              choices = colnames(nflData)[4:50],
-              selected = colnames(nflData)[4:50],
+              choices = colnames(teamData)[4:50],
+              selected = colnames(teamData)[4:50],
               multiple = TRUE,
               options = pickerOptions(actionsBox = TRUE,
                                       liveSearch = TRUE)
