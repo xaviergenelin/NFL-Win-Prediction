@@ -271,7 +271,30 @@ shinyUI(navbarPage(
       
         # modeling info tab within modeling
         tabPanel(
-          title = "Modeling Info"
+          title = "Modeling Info",
+          mainPanel(fluidPage(
+            "Putting my initial thoughts about what is going to happen with the modeling.
+          The user is going to be predicting for a single week in a season. They'll first choose the season they want,
+          then the week, and finally the number of weeks they want to use as their 'training' set 
+          (basically number of weeks before that week). This will filter the data into a training and test set in the server file.
+          Once that's all set, the user will choose the variables they want in each of the models to predict that week's results. 
+          The values in the training set will need to be aggregated throughout the weeks",
+            
+            br(),
+            br(),
+            
+            "A few other notes quick. When selecting the weeks for the training and test sets, they should have at least 1 week in
+          the training. So they need to select at least week 2 for prediction and 1 week of training within that season. They can
+          select 21 (i.e. the super bowl) and use the whole season, but can't use a number higher than the predicted week. So it
+          will need to be a maximum of the input if possible. 
+          These weeks before the prediction will need to be aggregated throughout to update how well the team is doing. 
+          The first week  in the time range they select is basically the starting point of what they're interested in. 
+          So we don't care about anything that happened before it. The elo rating (if they choose to use it) will be the 
+          only thing that takes anything outside this window into account.",
+            
+          )),
+          
+
         ),
         
         # model fitting tab within modeling
