@@ -1,24 +1,134 @@
 # Load in Data
 ```{r}
 library(tidyverse)
-originalData <- read_csv("data/scoresFull.csv")
+gameData <- read_csv("data/scoresFull.csv")
+
+homeAbb <- sapply(gameData$homeTeam, switch, 
+                  "Arizona Cardinals" = "ari", 
+                  "Atlanta Falcons" = "atl",
+                  "Baltimore Ravens" = "bal",
+                  "Buffalo Bills" = "buf",
+                  "Carolina Panthers" = "car", 
+                  "Chicago Bears" = "chi",
+                  "Cincinnati Bengals" = "cin",
+                  "Cleveland Browns" = "cle",
+                  "Dallas Cowboys" = "dal",
+                  "Denver Broncos" = "den",
+                  "Detroit Lions" = "det",
+                  "Green Bay Packers" = "gb",
+                  "Houston Texans" = "hou",
+                  "Indianapolis Colts" = "ind",
+                  "Jacksonville Jaguars" = "jax",
+                  "Kansas City Chiefs" = "kc",
+                  "San Diego Chargers" = "lac",
+                  "St. Louis Rams" = "lar",
+                  "Miami Dolphins" = "mia",
+                  "Minnesota Vikings" = "min",
+                  "New England Patriots" = "ne",
+                  "New Orleans Saints" = "no",
+                  "New York Giants" = "nyg",
+                  "New York Jets" = "nyj",
+                  "Oakland Raiders" = "oak",
+                  "Philadelphia Eagles" = "phi",
+                  "Pittsburgh Steelers" = "pit",
+                  "Seattle Seahawks" = "sea",
+                  "San Francisco 49ers" = "sf",
+                  "Tampa Bay Buccaneers" = "tb",
+                  "Tennessee Titans" = "ten",
+                  "Washington Redskins" = "wsh")
+
+awayAbb <- sapply(gameData$awayTeam, switch,
+                  "Arizona Cardinals" = "ari", 
+                  "Atlanta Falcons" = "atl",
+                  "Baltimore Ravens" = "bal",
+                  "Buffalo Bills" = "buf",
+                  "Carolina Panthers" = "car", 
+                  "Chicago Bears" = "chi",
+                  "Cincinnati Bengals" = "cin",
+                  "Cleveland Browns" = "cle",
+                  "Dallas Cowboys" = "dal",
+                  "Denver Broncos" = "den",
+                  "Detroit Lions" = "det",
+                  "Green Bay Packers" = "gb",
+                  "Houston Texans" = "hou",
+                  "Indianapolis Colts" = "ind",
+                  "Jacksonville Jaguars" = "jax",
+                  "Kansas City Chiefs" = "kc",
+                  "San Diego Chargers" = "lac",
+                  "St. Louis Rams" = "lar",
+                  "Miami Dolphins" = "mia",
+                  "Minnesota Vikings" = "min",
+                  "New England Patriots" = "ne",
+                  "New Orleans Saints" = "no",
+                  "New York Giants" = "nyg",
+                  "New York Jets" = "nyj",
+                  "Oakland Raiders" = "oak",
+                  "Philadelphia Eagles" = "phi",
+                  "Pittsburgh Steelers" = "pit",
+                  "Seattle Seahawks" = "sea",
+                  "San Francisco 49ers" = "sf",
+                  "Tampa Bay Buccaneers" = "tb",
+                  "Tennessee Titans" = "ten",
+                  "Washington Redskins" = "wsh")
+
+gameData$homeAbb <- homeAbb
+gameData$awayAbb <- awayAbb
+
+gameData <- gameData %>% 
+  mutate(HminusAScore = HFinal - AFinal) %>%
+  select(!c("date", "day"))
+
 ```
 
+# NFL Elo
+
+Elo data from 538 for each game 
+
+```{r}
+library("jsonlite")
+
+json_file <- 'https://datahub.io/five-thirty-eight/nfl-elo/datapackage.json'
+json_data <- fromJSON(paste(readLines(json_file), collapse=""))
+
+# get list of all resources:
+print(json_data$resources$name)
+
+# print all tabular data(if exists any)
+for(i in 1:length(json_data$resources$datahub$type)){
+  if(json_data$resources$datahub$type[i]=='derived/csv'){
+    path_to_file = json_data$resources$path[i]
+    eloData <- read.csv(url(path_to_file))
+  }
+}
+
+# team1 = home, team2 = away
+eloData <- eloData %>% 
+  filter(season %in% (2002:2014)) %>% 
+  select(season, team1, team2, elo1_pre, elo2_pre, score1, score2, date) %>%
+  rename("homeAbb" = team1,
+         "awayAbb" = team2,
+         "homeElo" = elo1_pre,
+         "awayElo" = elo2_pre,
+         "HFinal" = score1,
+         "AFinal" = score2)
+```
 
 Remove unnecessary columns that aren't being used in the analysis
 
 ```{r}
-filteredData <- originalData %>%
-  select(!c( "date", "day", "AQ1", "AQ2", "AQ3", "AQ4", "AOT", "AOT2", 
-             "HQ1", "HQ2", "HQ3", "HQ4", "HOT", "HOT2", "stadium", "startTime", 
-             "toss", "roof", "surface", "duration", "attendance", "weather", 
-             "vegasLine", "OU", "OUvalue", "OUresult", "HminusAScore", "homeSpread")) %>% 
-  mutate(week = as.numeric(ifelse(week == "WildCard", 18, 
-                                  ifelse(week == "Division", 19, 
-                                         ifelse(week == "ConfChamp", 20, 
-                                                ifelse(week == "SuperBowl", 21, week))))),
+filteredData <- gameData %>%
+  select(!c("AQ1", "AQ2", "AQ3", "AQ4", "AOT", "AOT2", 
+            "HQ1", "HQ2", "HQ3", "HQ4", "HOT", "HOT2", "stadium", "startTime", 
+            "toss", "roof", "surface", "duration", "attendance", "weather", 
+            "vegasLine", "OU", "OUvalue", "OUresult", "HminusAScore", "homeSpread",
+            "homeAbb", "awayAbb")) %>% 
+  mutate(week = ifelse(week == "WildCard", 18,
+                       ifelse(week == "Division", 19,
+                              ifelse(week == "ConfChamp", 20,
+                                     ifelse(week == "SuperBowl", 21, week)))),
          awayTOP = as.numeric(awayTOP),
-         homeTOP = as.numeric(homeTOP))
+         homeTOP = as.numeric(homeTOP),
+         week = as.numeric(week))
 ```
 
 First we split the data into two different groups, away teams and home teams. Then we rename the away and home stats into offensive and defensive stats for both data sets. Then the two datasets are combined into one so that we have the offensive and defensive data for each team.
@@ -43,6 +153,8 @@ away <- filteredData %>%
   rename_at(vars(starts_with("A")), funs(paste0("off", substring(., 2))))
 
 data <- rbind(home, away)
+
+unique(data$week)
 ```
 
 ```{r}
@@ -209,10 +321,18 @@ This code takes the cumulative average throughout a season for each offensive an
 ```
 
 ```{r}
-nflData <- data %>% mutate(week = as.factor(week)) %>% arrange(team, season, week)
+teamData <- data %>% arrange(team, season)
 
-write_csv(nflData, "data/nflData.csv")
+teamData$win <- as.factor(teamData$win)
+
+write_csv(teamData, "data/teamData.csv")
 ```
 
+```{r}
+library(colorr)
+
+x <- nfl.colors("vikings")
+x[[1]]
+```
 
 
