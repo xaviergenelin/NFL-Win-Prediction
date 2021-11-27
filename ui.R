@@ -276,7 +276,57 @@ shinyUI(navbarPage(
         
         # model fitting tab within modeling
         tabPanel(
-          title = "Model Fitting"
+          title = "Model Fitting",
+          
+          selectInput(
+            inputId = "seasonModel",
+            label = "Select a season",
+            choices = unique(teamData$season),
+            selected = "2014",
+            multiple = FALSE
+          ),
+          
+          numericInput(
+            inputId = "weekModel",
+            label = "Please select a week to predict",
+            value = 8,
+            min = 3,
+            max = 21,
+            step = 1
+          ),
+          
+          numericInput(
+            inputId = "trainWeeks",
+            label = "Select the number of weeks to use as training",
+            value = 4,
+            min = 2, 
+            max = 8,
+            step = 1
+          ),
+          
+          selectInput(
+            inputId = "logVars",
+            label = "Select the variables to use in the logistic model",
+            choices = colnames(teamData),
+            selected = colnames(teamData),
+            multiple = TRUE
+          ),
+          
+          selectInput(
+            inputId = "rfVars",
+            label = "Select the variables to use in the random forest model",
+            choices = colnames(teamData),
+            selected = colnames(teamData),
+            multiple = TRUE
+          ),
+          
+          selectInput(
+            inputId = "treeVars",
+            label = "Select the variables to use in the tree model",
+            choices = colnames(teamData),
+            selected = colnames(teamData),
+            multiple = TRUE
+          )
         ),
         
         # prediction tab within modeling
