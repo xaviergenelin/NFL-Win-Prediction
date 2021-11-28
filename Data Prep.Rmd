@@ -370,12 +370,14 @@ visData <- gameData %>%
          thirdPercDiff = (home3rdConv / home3rdAtt) - (away3rdConv / away3rdAtt),
          fourthConvDiff = home4thConv - away4thConv,
          fourthAttDiff = home4thAtt - away4thAtt,
-         fourthPercDiff = (home4thConv / home4thAtt) - (away4thConv / away4thAtt),
+         fourthPercDiff = ifelse(home4thAtt == 0, 0, (home4thConv / home4thAtt)) - 
+           ifelse(away4thAtt == 0, 0, (away4thConv / away4thAtt)),
          topDiff = homeTOP - awayTOP,
          eloDiff = homeElo - awayElo,
          winner = ifelse(homeWin == 1, "Home", "Away")
          ) %>%
-  select(-c("homeAbb", "awayAbb", "HFinal", "AFinal", starts_with("H"), starts_with("home"), starts_with("A"), starts_with("home")))
+  select(-c("homeAbb", "awayAbb", "HFinal", "AFinal", 
+            starts_with("H"), starts_with("home"), starts_with("A"), starts_with("home")))
 
 write_csv(visData, "data/visualGameData.csv")
 ```
