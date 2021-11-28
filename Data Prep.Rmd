@@ -388,8 +388,8 @@ Gets offensive and defensive data for each team in each game they play. Will be 
 
 ```{r}
 home <- gameData %>%
-  select("season", "week", "date", starts_with("home"), starts_with("H"), starts_with("away"), starts_with("A"), homeWin, -c(AFinal, HFinal, homeWin, awayTeam, awayAbb, awayElo, awayTOP, awayPenYds, awayNumPen, ATotalPlays, homeAbb)) %>%
-  rename("team" = "homeTeam") %>%
+  select("season", "week", "date", starts_with("home"), starts_with("H"), starts_with("away"), starts_with("A"), homeWin, -c(AFinal, HFinal, awayTeam, awayAbb, awayElo, awayTOP, awayPenYds, awayNumPen, ATotalPlays, homeAbb)) %>%
+  rename("team" = "homeTeam", "win" = "homeWin") %>%
   rename_at(vars(starts_with("home")), funs(paste0("off", substring(., 5)))) %>%
   rename_at(vars(starts_with("H")), funs(paste0("off", substring(., 2)))) %>%
   rename_at(vars(starts_with("away")), funs(paste0("def", substring(., 5)))) %>%
@@ -397,8 +397,8 @@ home <- gameData %>%
   rename(elo = "offElo", top = "offTOP")
 
 away <- gameData %>%
-  select("season", "week", "date", starts_with("home"), starts_with("H"), starts_with("away"), starts_with("A"), homeWin, -c(AFinal, HFinal, homeWin, homeTeam, homeAbb, homeElo, homeTOP, homePenYds, homeNumPen, HTotalPlays, awayAbb)) %>%
-  rename("team" = "awayTeam") %>%
+  select("season", "week", "date", starts_with("home"), starts_with("H"), starts_with("away"), starts_with("A"), homeWin, -c(AFinal, HFinal, homeTeam, homeAbb, homeElo, homeTOP, homePenYds, homeNumPen, HTotalPlays, awayAbb)) %>%
+  rename("team" = "awayTeam", "win" = "homeWin") %>%
   rename_at(vars(starts_with("away")), funs(paste0("off", substring(., 5)))) %>%
   rename_at(vars(starts_with("A")), funs(paste0("off", substring(., 2)))) %>%
   rename_at(vars(starts_with("home")), funs(paste0("def", substring(., 5)))) %>%
