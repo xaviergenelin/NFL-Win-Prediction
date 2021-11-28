@@ -138,6 +138,8 @@ gameData <- merge(gameData, eloData, by = c("season", "homeAbb", "awayAbb", "HFi
 
 ```
 
+# Prediction Data
+
 Get the schedule of games in the dataset
 
 ```{r}
@@ -177,13 +179,13 @@ Combine the home and away datasets onto the schedule. This will get used to aver
 allData <- left_join(schedule, away, by = c("season" = "season", "week" = "week", "awayAbb" = "abb", "awayTeam" = "team"))
 
 # label the stats as Away
-colnames(allData)[9:54] <- paste0(colnames(allData)[9:54], "Away")
+colnames(allData)[9:53] <- paste0(colnames(allData)[9:53], "Away")
 
 # get the stats for the home team
 allData <- left_join(allData, home, by = c("season" = "season", "week" = "week", "homeAbb" = "abb", "homeTeam" = "team"))
 
 # label the stats as Home
-colnames(allData)[55:100] <- paste0(colnames(allData)[55:100], "Home")
+colnames(allData)[54:98] <- paste0(colnames(allData)[54:98], "Home")
 ```
 
 Save this dataset into a csv.
@@ -336,5 +338,75 @@ Keep for now as a reference for what needs to happen in the aggregation of stats
 #                                        avgdef4thAtt))
 #          ) %>%
 #   select(-starts_with("avg"))
+```
+
+# Visual Data
+
+Take the difference of home stats - away stats for a game
+
+```{r}
+visData <- gameData %>%
+  mutate(firstDownDiff = HFirstDowns - AFirstDowns,
+         netPassYdsDiff = HNetPassYds - ANetPassYds,
+         totalYdsDiff = HTotalYds - ATotalYds,
+         turnoverDiff = HTurnovers - ATurnovers,
+         totalPlaysDiff = HTotalPlays - ATotalPlays,
+         rushAttDiff = homeRushAtt - awayRushAtt,
+         rushYdsDiff = homeRushYds - awayRushYds,
+         rushTDDiff = homeRushTD - awayRushTD,
+         passCompDiff = homePassComp - awayPassComp,
+         passAttDiff = homePassAtt - awayPassAtt,
+         passYdsDiff = homePassYds - awayPassYds,
+         passTDDiff = homePassTD - awayPassTD,
+         passIntDiff  = homePassInt - awayPassInt,
+         timesSackedDiff = homeTimesSacked - awayTimesSacked,
+         sackYdsLostDiff = homeSackYdsLost - awaySackYdsLost,
+         fumDiff = homeFum - awayFum,
+         fumLostDiff = homeFumLost - awayFumLost,
+         numPenDiff = homeNumPen - awayNumPen,
+         penYdsDiff = homePenYds - awayPenYds,
+         thirdConvDiff = home3rdConv - away3rdConv,
+         thirdAttDiff = home3rdAtt - away3rdAtt,
+         thirdPercDiff = (home3rdConv / home3rdAtt) - (away3rdConv / away3rdAtt),
+         fourthConvDiff = home4thConv - away4thConv,
+         fourthAttDiff = home4thAtt - away4thAtt,
+         fourthPercDiff = (home4thConv / home4thAtt) - (away4thConv / away4thAtt),
+         topDiff = homeTOP - awayTOP,
+         eloDiff = homeElo - awayElo,
+         winner = ifelse(homeWin == 1, "Home", "Away")
+         ) %>%
+  select(-c("homeAbb", "awayAbb", "HFinal", "AFinal", starts_with("H"), starts_with("home"), starts_with("A"), starts_with("home")))
+
+write_csv(visData, "data/visualGameData.csv")
+```
+
+
+
+# Team Data
+
+Gets offensive and defensive data for each team in each game they play. Will be used in some of the data visualization to give the user a team level versus a game level
+
+```{r}
+home <- gameData %>%
+  select("season", "week", "date", starts_with("home"), starts_with("H"), starts_with("away"), starts_with("A"), homeWin, -c(AFinal, HFinal, homeWin, awayTeam, awayAbb, awayElo, awayTOP, awayPenYds, awayNumPen, ATotalPlays, homeAbb)) %>%
+  rename("team" = "homeTeam") %>%
+  rename_at(vars(starts_with("home")), funs(paste0("off", substring(., 5)))) %>%
+  rename_at(vars(starts_with("H")), funs(paste0("off", substring(., 2)))) %>%
+  rename_at(vars(starts_with("away")), funs(paste0("def", substring(., 5)))) %>%
+  rename_at(vars(starts_with("A")), funs(paste0("def", substring(., 2)))) %>%
+  rename(elo = "offElo", top = "offTOP")
+
+away <- gameData %>%
+  select("season", "week", "date", starts_with("home"), starts_with("H"), starts_with("away"), starts_with("A"), homeWin, -c(AFinal, HFinal, homeWin, homeTeam, homeAbb, homeElo, homeTOP, homePenYds, homeNumPen, HTotalPlays, awayAbb)) %>%
+  rename("team" = "awayTeam") %>%
+  rename_at(vars(starts_with("away")), funs(paste0("off", substring(., 5)))) %>%
+  rename_at(vars(starts_with("A")), funs(paste0("off", substring(., 2)))) %>%
+  rename_at(vars(starts_with("home")), funs(paste0("def", substring(., 5)))) %>%
+  rename_at(vars(starts_with("H")), funs(paste0("def", substring(., 2)))) %>%
+  rename(elo = "offElo", top = "offTOP")
+
+teamData <- rbind(away, home)
+
+write_csv(teamData, "data/teamData.csv")
 ```
 
