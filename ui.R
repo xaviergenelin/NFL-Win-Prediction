@@ -273,6 +273,24 @@ shinyUI(navbarPage(
         tabPanel(
           title = "Modeling Info",
           mainPanel(fluidPage(
+            
+            br(),
+            
+            h3("Goals of the models"),
+            
+            "The goal of the model section is to determine who will win an NFL game. This is done by classification to see if the home 
+            team wins or loses (away team wins). There will be 3 different types of models that will 
+            be used to classify a winner for a game: logistic regression, random forests, and a classification tree",
+            
+            br(),
+            
+            "These models will be predicting for a single week in an NFL season. The user will select a single week to predict the 
+            winners for, along with the number of weeks that will be used to train the models for classification.",
+            
+            br(),
+            
+            h2("Initial Thoughts about the models"),
+            
             "Putting my initial thoughts about what is going to happen with the modeling.
           The user is going to be predicting for a single week in a season. They'll first choose the season they want,
           then the week, and finally the number of weeks they want to use as their 'training' set 
@@ -291,6 +309,28 @@ shinyUI(navbarPage(
           The first week  in the time range they select is basically the starting point of what they're interested in. 
           So we don't care about anything that happened before it. The elo rating (if they choose to use it) will be the 
           only thing that takes anything outside this window into account.",
+            
+            h4("Logistic Regression"),
+            
+            "Talk about the benefits and drawback of the approach. And some math stuff explaining it.",
+            
+            br(),
+            
+            "Equation:",
+            uiOutput("logRegEq"),
+            
+            br(),
+            br(),
+            
+            h4("Random Forests"),
+            
+            "Talk about the benefits and drawback of the approach. And some math stuff explaining it.",
+            
+            br(),
+            
+            h4("Classification Trees"),
+            
+            "Talk about the benefits and drawback of the approach. And some math stuff explaining it."
             
           )),
           
@@ -353,13 +393,18 @@ shinyUI(navbarPage(
               multiple = TRUE
             ),
             
-            h3("Tree"),
+            h3("Classification Tree"),
             selectInput(
               inputId = "treeVars",
               label = "Select the variables to use in the tree model",
               choices = colnames(teamData),
               selected = colnames(teamData),
               multiple = TRUE
+            ),
+            
+            actionButton(
+              inputId = "trainModels",
+              label = "Fit Models"
             )
             
           ),

@@ -94,6 +94,19 @@ shinyServer(function(input, output,session) {
   # Data Modeling Tab #
   #####################
   
+  ##############
+  # Model Info #
+  ##############
+  
+  output$logRegEq <- renderUI({
+    
+    withMathJax(
+      helpText(
+        "$$\\ln(\\frac{p_i}{1-p_i}) = \\beta_0 + \\Sigma^k_{j=1}\\beta_jx_{ij}$$"
+      )
+    )
+  })
+  
   #################
   # Model Fitting #
   #################
