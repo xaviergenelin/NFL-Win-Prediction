@@ -12,6 +12,9 @@ teamData <- read_csv("data/teamData.csv")
 
 teamData$win <- as.factor(teamData$win)
 teamData$week <- as.numeric(teamData$week)
+teamData$date <- as.Date(teamData$date)
+
+#visualData <- read_csv("data/visualGameData.csv")
 
 # Define server logic required to draw a histogram
 shinyServer(function(input, output,session) {
@@ -54,18 +57,29 @@ shinyServer(function(input, output,session) {
   # Data Exploration Tab #
   ########################
   
-  # histogram
-  
-  
-  # scatter plot 
-  output$scatterPlot <- renderPlotly({
-    filteredData <- teamData %>%
+  # data based on user inputs
+  graphData <- reactive({
+    teamData %>%
       filter(team %in% input$teamsFilter,
              season %in% input$seasonsFilter,
-             week %in% input$weeksFilter) %>%
-      select(-c(week, season, team))
+             week %in% input$weeksFilter)
+  })
+  
+  
+  # line graph
+  output$lineGraph <- renderPlotly({
     
-    plot <- ggplot(data = filteredData, aes_string(x = input$xVar, y = input$yVar)) +
+    linePlot <- ggplot(data = graphData(), aes(x = date, group = team, color = team)) +
+      geom_line(aes_string(y = input$lineVar))
+    
+    ggplotly(linePlot, tooltip = c("x", "y", "group"))
+  })
+
+  
+  # scatter plot of team data
+  output$scatterPlot <- renderPlotly({
+
+    plot <- ggplot(data = graphData(), aes_string(x = input$xVar, y = input$yVar)) +
       geom_jitter(aes(color = win)) +
       scale_color_manual(values = c("red", "black"))
     

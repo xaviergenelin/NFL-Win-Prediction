@@ -13,13 +13,13 @@ library(plotly)
 # link to the dataset
 originalDataLink <- "https://www4.stat.ncsu.edu/~online/datasets/"
 
-# the original nfl data
-#gameData <- read_csv("")
-
 # the manipulated nfl data
 teamData <- read_csv("data/teamData.csv")
 
 weeks <- c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21)
+
+# visual game data
+#visualData <- read_csv("data/visualGameData.csv")
 
 # Define UI for application that draws a histogram
 shinyUI(navbarPage(
@@ -129,6 +129,15 @@ shinyUI(navbarPage(
         # data exploration side bar
         sidebarPanel(
           
+          radioButtons(
+            inputId = "dataset",
+            label = "Choose a data set",
+            choiceNames = c("Team Data", "Game Data"),
+            choiceValues = c("teamDat", "gameDat"),
+            selected = "teamDat"
+            
+          ),
+          
           ### Variables for all graphs/summaries
           h3("Universal Variables"),
           
@@ -168,21 +177,23 @@ shinyUI(navbarPage(
             inputId = "plotType",
             label = "Plot Type",
             # histogram and scatter plot for now. Not sure what they'll be
-            choiceValues = c("histogram", "scatterPlot"),
-            choiceNames = c("Histogram", "Scatter Plot"),
-            selected = "histogram"
+            choiceValues = c("lineGraph", "scatterPlot"),
+            choiceNames = c("Line Graph", "Scatter Plot"),
+            selected = "lineGraph"
           ),
           
           # histogram/first plot options
           conditionalPanel(
             # condition for the plot type
-            condition = "input.plotType == 'histogram'",
+            condition = "input.plotType == 'lineGraph'",
             
             # some option for whatever this plot is going to be
             selectInput(
-              inputId = "histVars",
-              label = "Are you sure about that?",
-              choices = c("Yes", "No")
+              inputId = "lineVar",
+              label = "Select the stat",
+              choices = colnames(teamData)[6:50],
+              selected = "offPassYds",
+              multiple = FALSE
             )
           ),
           
@@ -195,7 +206,7 @@ shinyUI(navbarPage(
             selectInput(
               inputId = "xVar",
               label = "Select an X variable",
-              choices = colnames(teamData)[4:50],
+              choices = colnames(teamData)[6:50],
               selected = "offTotalYds"
             ),
             
@@ -203,7 +214,7 @@ shinyUI(navbarPage(
             selectInput(
               inputId = "yVar",
               label = "Select a Y variable",
-              choices = colnames(teamData)[4:50],
+              choices = colnames(teamData)[6:50],
               selected = "defTotalYds"
             )
           ),
@@ -229,8 +240,8 @@ shinyUI(navbarPage(
               inputId = "numVars",
               label = "Select the variable(s) to summarize",
               # excludes week, season, team, win columns
-              choices = colnames(teamData)[4:50],
-              selected = colnames(teamData)[4:50],
+              choices = colnames(teamData)[6:50],
+              selected = colnames(teamData)[6:50],
               multiple = TRUE,
               options = pickerOptions(actionsBox = TRUE,
                                       liveSearch = TRUE)
@@ -252,12 +263,21 @@ shinyUI(navbarPage(
         # data exploration main panel
         mainPanel(
           # graphs
+          h3("Visual Graphs"),
+          
           conditionalPanel(
             condition = "input.plotType == 'scatterPlot'",
             plotlyOutput("scatterPlot")
           ),
           
+          conditionalPanel(
+            condition = "input.plotType == 'lineGraph'",
+            plotlyOutput("lineGraph")
+          ),
+          
           # numeric summaries
+          h3("Numerical Summaries"),
+          
           conditionalPanel(
             condition = "input.summaryType == 'numeric'",
             dataTableOutput("numericSummary")
@@ -429,7 +449,8 @@ shinyUI(navbarPage(
                 "Classification Tree"
               ),
               choiceValues = c("logReg", "randFor", "classTree"),
-              selected = "logReg"
+              selected = "logReg",
+              inline = TRUE
             )
           )
         )
