@@ -374,10 +374,12 @@ visData <- gameData %>%
            ifelse(away4thAtt == 0, 0, (away4thConv / away4thAtt)),
          topDiff = homeTOP - awayTOP,
          eloDiff = homeElo - awayElo,
-         winner = ifelse(homeWin == 1, "Home", "Away")
+         winner = ifelse(homeWin == 1, "Home", "Away"),
+         team1 = homeTeam,
+         team2 = awayTeam
          ) %>%
-  select(homeTeam, awayTeam, -c("homeAbb", "awayAbb", "HFinal", "AFinal", 
-                                starts_with("H"), starts_with("home"), starts_with("A"), starts_with("home")))
+  select(-c(starts_with("H"), starts_with("home"), starts_with("A"), starts_with("home"))) %>%
+  rename(homeTeam = team1, awayTeam = team2)
 
 write_csv(visData, "data/visualGameData.csv")
 ```
