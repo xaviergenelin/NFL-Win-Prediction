@@ -1,4 +1,8 @@
-# Load in Data
+
+# Original Data
+
+Load in the dataset. Create the abbreviations for the teams based on the 538 abbreviations.
+
 ```{r}
 library(tidyverse)
 gameData <- read_csv("data/scoresFull.csv")
@@ -74,8 +78,9 @@ awayAbb <- sapply(gameData$awayTeam, switch,
 gameData$homeAbb <- homeAbb
 gameData$awayAbb <- awayAbb
 
+
 gameData <- gameData %>% 
-  mutate(HminusAScore = HFinal - AFinal) %>%
+  mutate(homeWin = ifelse(HFinal - AFinal > 0, 1, 0)) %>%
   select(!c("date", "day"))
 
 ```
@@ -91,7 +96,7 @@ json_file <- 'https://datahub.io/five-thirty-eight/nfl-elo/datapackage.json'
 json_data <- fromJSON(paste(readLines(json_file), collapse=""))
 
 # get list of all resources:
-print(json_data$resources$name)
+# print(json_data$resources$name)
 
 # print all tabular data(if exists any)
 for(i in 1:length(json_data$resources$datahub$type)){
@@ -113,15 +118,14 @@ eloData <- eloData %>%
          "AFinal" = score2)
 ```
 
-Remove unnecessary columns that aren't being used in the analysis
+Remove unnecessary columns for the gameData dataset and merge the 538 elo data onto the dataset. Change the postseason weeks into numeric weeks following the regular season.
 
 ```{r}
-filteredData <- gameData %>%
+gameData <- gameData %>%
   select(!c("AQ1", "AQ2", "AQ3", "AQ4", "AOT", "AOT2", 
             "HQ1", "HQ2", "HQ3", "HQ4", "HOT", "HOT2", "stadium", "startTime", 
             "toss", "roof", "surface", "duration", "attendance", "weather", 
-            "vegasLine", "OU", "OUvalue", "OUresult", "HminusAScore", "homeSpread",
-            "homeAbb", "awayAbb")) %>% 
+            "vegasLine", "OU", "OUvalue", "OUresult", "homeSpread", "HminusAScore")) %>% 
   mutate(week = ifelse(week == "WildCard", 18,
                        ifelse(week == "Division", 19,
                               ifelse(week == "ConfChamp", 20,
@@ -129,53 +133,67 @@ filteredData <- gameData %>%
          awayTOP = as.numeric(awayTOP),
          homeTOP = as.numeric(homeTOP),
          week = as.numeric(week))
+
+gameData <- merge(gameData, eloData, by = c("season", "homeAbb", "awayAbb", "HFinal", "AFinal"))
+
 ```
 
-First we split the data into two different groups, away teams and home teams. Then we rename the away and home stats into offensive and defensive stats for both data sets. Then the two datasets are combined into one so that we have the offensive and defensive data for each team.
+Get the schedule of games in the dataset
 
 ```{r}
-home <- filteredData %>%
-  mutate(win = ifelse(HFinal > AFinal, 1, 0)) %>%
-  select(!c(awayTeam, HFinal, AFinal, awayTOP)) %>%
-  rename(team = homeTeam, top = homeTOP) %>%
+schedule <- gameData %>%
+  select("season", "week", "date", "homeTeam", "homeAbb", "awayTeam", "awayAbb", "homeWin")  %>%
+  arrange("season", "week")
+
+```
+
+Get the offensive and defensive stats for each team and split them up into two datasets, one for the home team and one for the away team.
+
+```{r}
+home <- gameData %>%
+  select("season", "week", starts_with("home"), starts_with("H"), starts_with("away"), starts_with("A"), -c(AFinal, HFinal, homeWin, awayTeam, awayAbb, awayElo, awayTOP, awayPenYds, awayNumPen, ATotalPlays)) %>%
+  rename("team" = "homeTeam") %>%
   rename_at(vars(starts_with("home")), funs(paste0("off", substring(., 5)))) %>%
-  rename_at(vars(starts_with("away")), funs(paste0("def", substring(., 5)))) %>%
   rename_at(vars(starts_with("H")), funs(paste0("off", substring(., 2)))) %>%
-  rename_at(vars(starts_with("A")), funs(paste0("def", substring(., 2))))
+  rename_at(vars(starts_with("away")), funs(paste0("def", substring(., 5)))) %>%
+  rename_at(vars(starts_with("A")), funs(paste0("def", substring(., 2)))) %>%
+  rename("abb" = "offAbb")
 
-away <- filteredData %>%
-  mutate(win = ifelse(AFinal > HFinal, 1, 0)) %>%
-  select(!c(homeTeam, HFinal, AFinal, homeTOP)) %>%
-  rename(team = awayTeam, top = awayTOP) %>%
-  rename_at(vars(starts_with("home")), funs(paste0("def", substring(., 5)))) %>%
+away <- gameData %>%
+  select("season", "week", starts_with("home"), starts_with("H"), starts_with("away"), starts_with("A"), -c(AFinal, HFinal, homeWin, homeTeam, homeAbb, homeElo, homeTOP, homePenYds, homeNumPen, HTotalPlays)) %>%
+  rename("team" = "awayTeam") %>%
   rename_at(vars(starts_with("away")), funs(paste0("off", substring(., 5)))) %>%
+  rename_at(vars(starts_with("A")), funs(paste0("off", substring(., 2)))) %>%
+  rename_at(vars(starts_with("home")), funs(paste0("def", substring(., 5)))) %>%
   rename_at(vars(starts_with("H")), funs(paste0("def", substring(., 2)))) %>%
-  rename_at(vars(starts_with("A")), funs(paste0("off", substring(., 2))))
+  rename("abb" = "offAbb")
 
-data <- rbind(home, away)
-
-unique(data$week)
 ```
+
+Combine the home and away datasets onto the schedule. This will get used to average throughout a season in the siny app to get average stats for a matchup based on how each team is doing.
 
 ```{r}
-# data <- rbind(home, away) %>% 
-#   arrange(team, season, week) %>% 
-#   group_by(team) %>% 
-#   mutate(teamRow = row_number())
+# get the stats of the away team
+allData <- left_join(schedule, away, by = c("season" = "season", "week" = "week", "awayAbb" = "abb", "awayTeam" = "team"))
+
+# label the stats as Away
+colnames(allData)[9:54] <- paste0(colnames(allData)[9:54], "Away")
+
+# get the stats for the home team
+allData <- left_join(allData, home, by = c("season" = "season", "week" = "week", "homeAbb" = "abb", "homeTeam" = "team"))
+
+# label the stats as Home
+colnames(allData)[55:100] <- paste0(colnames(allData)[55:100], "Home")
 ```
 
-This code takes the cumulative average throughout a season for each offensive and defensive statistic and the time of possession.
+Save this dataset into a csv.
 
 ```{r}
-# avgData <- data %>% 
-#   group_by(team, season) %>%
-#   mutate(across(starts_with("def"), ~ cummean(.)),
-#          across(starts_with("off"), ~ cummean(.)),
-#          avgTOP = cummean(top)) %>%
-#   rename_at(vars(starts_with("off")), funs(paste0("avg", .))) %>%
-#   rename_at(vars(starts_with("def")), funs(paste0("avg", .))) %>%
-#   select(-top)
+write_csv(allData, "data/allData.csv")
 ```
+
+
+Keep for now as a reference for what needs to happen in the aggregation of stats within shiny.
 
 ```{r}
 # nflData <- merge(data, avgData, by = c("team", "week", "season", "teamRow", "win"))
@@ -319,20 +337,4 @@ This code takes the cumulative average throughout a season for each offensive an
 #          ) %>%
 #   select(-starts_with("avg"))
 ```
-
-```{r}
-teamData <- data %>% arrange(team, season)
-
-teamData$win <- as.factor(teamData$win)
-
-write_csv(teamData, "data/teamData.csv")
-```
-
-```{r}
-library(colorr)
-
-x <- nfl.colors("vikings")
-x[[1]]
-```
-
 
