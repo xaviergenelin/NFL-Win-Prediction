@@ -407,6 +407,8 @@ away <- gameData %>%
 
 teamData <- rbind(away, home)
 
+teamData <- teamData %>% arrange(season, team)
+
 write_csv(teamData, "data/teamData.csv")
 ```
 
