@@ -8,13 +8,18 @@ library(shiny)
 library(DT)
 library(plotly)
 
+# load in the team data
 teamData <- read_csv("data/teamData.csv")
 
 teamData$win <- as.factor(teamData$win)
 teamData$week <- as.numeric(teamData$week)
 teamData$date <- as.Date(teamData$date)
 
-#visualData <- read_csv("data/visualGameData.csv")
+# game data for the visuals
+gameVisualData <- read_csv("data/visualGameData.csv")
+
+# dataset of the schedule
+schedule <- read_csv("data/schedule.csv")
 
 # Define server logic required to draw a histogram
 shinyServer(function(input, output,session) {
@@ -25,12 +30,13 @@ shinyServer(function(input, output,session) {
   
   # subset the data on the data tab if the user wants any specific filters
   newData <- reactive({
+    # give user the chance to arrange by season and week/team?
+    ### breks if season column isn't selected in the output, and week/team also
     newData <- teamData %>% 
       filter(season %in% input$seasonFilter,
              team %in% input$teamFilter,
              week %in% input$weekFilter) %>%
-      select(input$columnFilter) %>%
-      arrange(season, team, week)
+      select(input$columnFilter) 
   })
   
   # data table in the data tab
@@ -57,29 +63,31 @@ shinyServer(function(input, output,session) {
   # Data Exploration Tab #
   ########################
   
+  ### Team
+  
   # data based on user inputs
-  graphData <- reactive({
+  graphDataTeam <- reactive({
     teamData %>%
-      filter(team %in% input$teamsFilter,
-             season %in% input$seasonsFilter,
-             week %in% input$weeksFilter)
+      filter(team %in% input$teamsFilterTeam,
+             season %in% input$seasonsFilterTeam,
+             week %in% input$weeksFilterTeam)
   })
   
   
   # line graph
-  output$lineGraph <- renderPlotly({
+  output$lineGraphTeam <- renderPlotly({
     
-    linePlot <- ggplot(data = graphData(), aes(x = date, group = team, color = team)) +
-      geom_line(aes_string(y = input$lineVar))
+    linePlot <- ggplot(data = graphDataTeam(), aes(x = date, group = team, color = team)) +
+      geom_line(aes_string(y = input$lineVarTeam))
     
     ggplotly(linePlot, tooltip = c("x", "y", "group"))
   })
 
   
   # scatter plot of team data
-  output$scatterPlot <- renderPlotly({
+  output$scatterPlotTeam <- renderPlotly({
 
-    plot <- ggplot(data = graphData(), aes_string(x = input$xVar, y = input$yVar)) +
+    plot <- ggplot(data = graphDataTeam(), aes_string(x = input$xVarTeam, y = input$yVarTeam)) +
       geom_jitter(aes(color = win)) +
       scale_color_manual(values = c("red", "black"))
     
@@ -89,15 +97,15 @@ shinyServer(function(input, output,session) {
   
   
   # the numerical summary for different variables
-  output$numericSummary <- renderDT({
+  output$numericSummaryTeam <- renderDT({
     
     # filter the data based on the universal filters and remove the week, season, and team columns
     filteredData <- teamData %>%
-      filter(team %in% input$teamsFilter,
-             season %in% input$seasonsFilter,
-             week %in% input$weeksFilter) %>%
+      filter(team %in% input$teamsFilterTeam,
+             season %in% input$seasonsFilterTeam,
+             week %in% input$weeksFilterTeam) %>%
       select(-c(week, season, team)) %>%
-      select(input$numVars)
+      select(input$numVarsTeam)
     
     numericSum <- do.call(cbind, lapply(filteredData, summary))
     

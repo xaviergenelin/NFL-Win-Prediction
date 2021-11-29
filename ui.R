@@ -13,9 +13,16 @@ library(plotly)
 # link to the dataset
 originalDataLink <- "https://www4.stat.ncsu.edu/~online/datasets/"
 
-# the manipulated nfl data
+# team data, shows offensive and defensive data throughout a season
 teamData <- read_csv("data/teamData.csv")
 
+# game data for the visuals
+gameVisualData <- read_csv("data/visualGameData.csv")
+
+# data set of the schedule
+schedule <- read_csv("data/schedule.csv")
+
+# week vector. Using weeks from the dataframe gets thrown off by the bye weeks
 weeks <- c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21)
 
 # visual game data
@@ -27,8 +34,10 @@ shinyUI(navbarPage(
   
   # create tabs for the sections
   tabsetPanel(
+    #############
+    # About tab #
+    #############
     
-    ##### About tab
       tabPanel(
         title = "About",
         
@@ -68,14 +77,18 @@ shinyUI(navbarPage(
         ),
 
       ),
+      ############
+      # Data tab #
+      ############
       
-      ##### Data tab
       tabPanel(
         title = "Data",
         
         sidebarPanel(
           # possibly give the user the option to choose the original game data or the team data
           ## the data is the same but displayed in two different ways 
+          
+          ### team data
           pickerInput(
             inputId = "teamFilter",
             label = "Select the team(s)",
@@ -121,8 +134,10 @@ shinyUI(navbarPage(
           dataTableOutput("dataTable")
         )
       ),
-    
-      ##### Data Exploration tab
+      ########################
+      # Data Exploration tab #
+      ########################
+      
       tabPanel(
         title = "Data Exploration",
         
@@ -138,126 +153,188 @@ shinyUI(navbarPage(
             
           ),
           
-          ### Variables for all graphs/summaries
-          h3("Universal Variables"),
-          
-          pickerInput(
-            inputId = "teamsFilter",
-            label = "Team(s)",
-            choices = unique(teamData$team),
-            selected = unique(teamData$team),
-            multiple = TRUE,
-            options = pickerOptions(actionsBox = TRUE,
-                                    liveSearch = TRUE)
-          ),
-          
-          pickerInput(
-            inputId = "seasonsFilter",
-            label = "Season(s)",
-            choices = unique(teamData$season),
-            selected = unique(teamData$season),
-            multiple = TRUE,
-            options = pickerOptions(actionsBox = TRUE)
-          ),
-          
-          pickerInput(
-            inputId = "weeksFilter",
-            label = "Week(s)",
-            choices = weeks,
-            selected = weeks,
-            multiple = TRUE,
-            options = pickerOptions(actionsBox = TRUE)
-          ),
-          
-          ### graph inputs
-          h3("Graph Options"),
-          
-          ### type of graphical summaries
-          radioButtons(
-            inputId = "plotType",
-            label = "Plot Type",
-            # histogram and scatter plot for now. Not sure what they'll be
-            choiceValues = c("lineGraph", "scatterPlot"),
-            choiceNames = c("Line Graph", "Scatter Plot"),
-            selected = "lineGraph"
-          ),
-          
-          # histogram/first plot options
+          ### Team Data options
           conditionalPanel(
-            # condition for the plot type
-            condition = "input.plotType == 'lineGraph'",
+            condition = "input.dataset == 'teamDat'",
             
-            # some option for whatever this plot is going to be
-            selectInput(
-              inputId = "lineVar",
-              label = "Select the stat",
-              choices = colnames(teamData)[6:50],
-              selected = "offPassYds",
-              multiple = FALSE
-            )
-          ),
-          
-          # scatter plot options
-          conditionalPanel(
-            # condition for the plot type
-            condition = "input.plotType == 'scatterPlot'",
+            ### Variables for all graphs/summaries
+            h3("Universal Variables"),
             
-            # select the x variable for the scatter plot
-            selectInput(
-              inputId = "xVar",
-              label = "Select an X variable",
-              choices = colnames(teamData)[6:50],
-              selected = "offTotalYds"
+            pickerInput(
+              inputId = "seasonsFilterTeam",
+              label = "Season(s)",
+              choices = unique(teamData$season),
+              selected = unique(teamData$season),
+              multiple = TRUE,
+              options = pickerOptions(actionsBox = TRUE)
             ),
             
-            # select the y variable for the scatter plot
-            selectInput(
-              inputId = "yVar",
-              label = "Select a Y variable",
-              choices = colnames(teamData)[6:50],
-              selected = "defTotalYds"
-            )
-          ),
-          
-          h3("Numerical Options"),
-          
-          ### summary options
-          radioButtons(
-            inputId = "summaryType",
-            label = "Summary Type",
-            # numeric and something else as the numerical summaries
-            choiceValues = c("numeric", "other"),
-            choiceNames = c("Numeric", "Second Summary"),
-            selected = "numeric"
-          ),
-          
-          # numeric summary options
-          conditionalPanel(
-            condition = "input.summaryType == 'numeric'",
-            
-            # select the variables for the numeric summary table
             pickerInput(
-              inputId = "numVars",
-              label = "Select the variable(s) to summarize",
-              # excludes week, season, team, win columns
-              choices = colnames(teamData)[6:50],
-              selected = colnames(teamData)[6:50],
+              inputId = "weeksFilterTeam",
+              label = "Week(s)",
+              choices = weeks,
+              selected = weeks,
+              multiple = TRUE,
+              options = pickerOptions(actionsBox = TRUE)
+            ),
+            
+            pickerInput(
+              inputId = "teamsFilterTeam",
+              label = "Team(s)",
+              choices = unique(teamData$team),
+              selected = unique(teamData$team),
               multiple = TRUE,
               options = pickerOptions(actionsBox = TRUE,
                                       liveSearch = TRUE)
-            )
-          ),
-          
-          conditionalPanel(
-            condition = "input.summaryType == 'other'",
+            ),
             
-            selectInput(
-              inputId = "otherVars",
-              label = "What summary is this going to be?",
-              choices = c("No idea", "Kind of have an idea", "Lol I have no clue")
-            )
-          )
+            ### graph inputs
+            h3("Graph Options"),
+            
+            ### type of graphical summaries
+            radioButtons(
+              inputId = "plotTypeTeam",
+              label = "Plot Type",
+              # histogram and scatter plot for now. Not sure what they'll be
+              choiceValues = c("lineGraphTeam", "scatterPlotTeam"),
+              choiceNames = c("Line Graph", "Scatter Plot"),
+              selected = "lineGraphTeam"
+            ),
+            
+            # histogram/first plot options
+            conditionalPanel(
+              # condition for the plot type
+              condition = "input.plotTypeTeam == 'lineGraphTeam'",
+              
+              # some option for whatever this plot is going to be
+              selectInput(
+                inputId = "lineVarTeam",
+                label = "Select the stat",
+                choices = colnames(teamData)[6:50],
+                selected = "offPassYds",
+                multiple = FALSE
+              )
+            ),
+            
+            # scatter plot options
+            conditionalPanel(
+              # condition for the plot type
+              condition = "input.plotTypeTeam == 'scatterPlotTeam'",
+              
+              # select the x variable for the scatter plot
+              selectInput(
+                inputId = "xVarTeam",
+                label = "Select an X variable",
+                choices = colnames(teamData)[6:50],
+                selected = "offTotalYds"
+              ),
+              
+              # select the y variable for the scatter plot
+              selectInput(
+                inputId = "yVarTeam",
+                label = "Select a Y variable",
+                choices = colnames(teamData)[6:50],
+                selected = "defTotalYds"
+              )
+            ),
+            
+            h3("Numerical Options"),
+            
+            ### summary options
+            radioButtons(
+              inputId = "summaryTypeTeam",
+              label = "Summary Type",
+              # numeric and something else as the numerical summaries
+              choiceValues = c("numericTeam", "otherTeam"),
+              choiceNames = c("Numeric", "Second Summary"),
+              selected = "numericTeam"
+            ),
+            
+            # numeric summary options
+            conditionalPanel(
+              condition = "input.summaryType == 'numeric'",
+              
+              # select the variables for the numeric summary table
+              pickerInput(
+                inputId = "numVarsTeam",
+                label = "Select the variable(s) to summarize",
+                # excludes week, season, team, win columns
+                choices = colnames(teamData)[6:50],
+                selected = colnames(teamData)[6:50],
+                multiple = TRUE,
+                options = pickerOptions(actionsBox = TRUE,
+                                        liveSearch = TRUE)
+              )
+            ),
           
+            conditionalPanel(
+              condition = "input.summaryType == 'other'",
+              
+              selectInput(
+                inputId = "otherVars",
+                label = "What summary is this going to be?",
+                choices = c("No idea", "Kind of have an idea", "Lol I have no clue")
+              )
+            )
+
+          ), # end of conditional panel for the team data
+          
+          ### game data options
+          conditionalPanel(
+            condition = "input.dataset == 'gameDat'",
+            
+            h3("Universal Variables"),
+            
+            pickerInput(
+              inputId = "seasonFilterGame",
+              label = "Season(s)",
+              choices = unique(gameVisualData$season),
+              selected = unique(gameVisualData$season),
+              multiple = TRUE,
+              options = pickerOptions(actionsBox = TRUE)
+            ),
+            
+            pickerInput(
+              inputId = "weekFilterGame",
+              label = "Week(s)",
+              choices = weeks,
+              selected = weeks,
+              multiple = TRUE,
+              options = pickerOptions(actionsBox = TRUE)
+            ),
+            
+            pickerInput(
+              inputId = "homeTeamFilterGame",
+              label = "Home Team(s)",
+              choices = unique(gameVisualData$homeTeam),
+              selected = unique(gameVisualData$homeTeam),
+              multiple = TRUE,
+              options = pickerOptions(actionsBox = TRUE,
+                                      liveSearch = TRUE)
+            ),
+            
+            pickerInput(
+              inputId = "awayTeamFilterGame",
+              label = "Away Team(s)",
+              choices = sort(unique(gameVisualData$awayTeam)),
+              selected = unique(gameVisualData$awayTeam),
+              multiple = TRUE,
+              options = pickerOptions(actionsBox = TRUE,
+                                      liveSearch = TRUE)
+            ),
+            
+            h3("Graph Options"),
+            
+            radioButtons(
+              inputId = "plotTypeGame",
+              label = "Plot Type",
+              choiceValues = c("scatterPlotGame", "otherGame"),
+              choiceNames = c("Scatter Plot", "Something Else"),
+              selected = "scatterPlotGame"
+            )
+            
+          ) # end of conditional panel for game Data 
+
         ),
         
         # data exploration main panel
@@ -266,23 +343,36 @@ shinyUI(navbarPage(
           h3("Visual Graphs"),
           
           conditionalPanel(
-            condition = "input.plotType == 'scatterPlot'",
-            plotlyOutput("scatterPlot")
+            # graphs for the team dataset
+            condition = "input.dataset == 'teamDat'", 
+            
+            conditionalPanel(
+              condition = "input.plotTypeTeam == 'scatterPlotTeam'",
+              plotlyOutput("scatterPlotTeam")
+            ),
+            
+            conditionalPanel(
+              condition = "input.plotTypeTeam == 'lineGraphTeam'",
+              plotlyOutput("lineGraphTeam")
+            ),
           ),
           
-          conditionalPanel(
-            condition = "input.plotType == 'lineGraph'",
-            plotlyOutput("lineGraph")
-          ),
+
           
           # numeric summaries
           h3("Numerical Summaries"),
           
           conditionalPanel(
-            condition = "input.summaryType == 'numeric'",
-            dataTableOutput("numericSummary")
-          )
-        )
+            condition = "input.dataset == 'teamDat'",
+            
+            conditionalPanel(
+              condition = "input.summaryTypeTeam == 'numericTeam'",
+              dataTableOutput("numericSummaryTeam")
+            )
+          ),
+          
+          
+        ) # end of main panel for data exploration tab
       ),
     
       #####  Modeling tab
@@ -430,7 +520,7 @@ shinyUI(navbarPage(
           ),
           
           mainPanel(
-            
+            "Model stuff"
           )
 
         ),
@@ -452,6 +542,10 @@ shinyUI(navbarPage(
               selected = "logReg",
               inline = TRUE
             )
+          ),
+          
+          mainPanel(
+            "Prediction Stuff"
           )
         )
       
