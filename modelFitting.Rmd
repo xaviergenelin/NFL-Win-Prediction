@@ -24,7 +24,7 @@ colnames(modelData)
 ```{r}
 teamData <- read_csv("data/teamData.csv")
 
-teamData <- teamData %>% filter(season == 2009, between(week, 4, 9))
+teamData <- teamData %>% filter(season == 2009, between(week, 2, 9))
 
 summedData <- teamData %>%
   group_by(team) %>%
@@ -78,7 +78,7 @@ summedData <- teamData %>%
 
 ```{r}
 schedule <- read_csv("data/schedule.csv")
-schedule <- schedule %>% filter(season == 2009, between(week, 4, 9))
+schedule <- schedule %>% filter(season == 2009, between(week, 2, 9))
 
 modeling <- left_join(schedule, summedData, by = c("season" = "season", "week" = "week", "date" = "date", "awayTeam" = "team"))
 
@@ -93,7 +93,6 @@ colnames(modeling)[50:90] <- paste0(colnames(modeling)[50:90], "Home")
 # 
 # # label the stats as Away
 # colnames(allData)[9:53] <- paste0(colnames(allData)[9:53], "Away")
-colnames(modeling)
 ```
 
 ```{r}
@@ -151,8 +150,42 @@ trainData <- modelData %>% filter(week != 9)
 ```{r}
 library(caret)
 
-logModel <- train(data = trainData, homeWin ~ offRushYdsDiff + offPassYdsDiff, method = "glm", family = "binomial")
+# logistic regression
+logModel <- train(data = trainData, homeWin ~ offRushYdsDiff + offPassYdsDiff + offTurnoversDiff, 
+                  method = "glm", family = "binomial")
 
 logModel$results
+
+logPred <- predict(logModel, newdata = testData)
+
+mean(testData$homeWin == logPred)
+
+```
+
+```{r}
+# random forest
+tune.grid <- expand.grid(.mtry = (1:3))
+
+rfModel <- train(data = trainData, homeWin ~ offRushYdsDiff + offPassYdsDiff + offTurnoversDiff,
+                 method = "rf", metric = "Accuracy", tuneGrid = tune.grid)
+
+rfModel$results
+
+rfPred <- predict(rfModel, newdata = testData)
+
+mean(testData$homeWin == rfPred)
+```
+
+```{r}
+# classification tree
+
+treeModel <- train(data = trainData, homeWin ~ offRushYdsDiff + offPassYdsDiff + offTurnoversDiff,
+                   method = "rpart", metric = "Accuracy" )
+
+treeModel$results
+
+treePred <- predict(treeModel, newdata = testData)
+
+mean(testData$homeWin == treePred)
 ```
 
