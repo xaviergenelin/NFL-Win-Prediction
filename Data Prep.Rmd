@@ -147,6 +147,7 @@ schedule <- gameData %>%
   select("season", "week", "date", "homeTeam", "homeAbb", "awayTeam", "awayAbb", "homeWin")  %>%
   arrange("season", "week")
 
+write_csv(schedule, "data/schedule.csv")
 ```
 
 Get the offensive and defensive stats for each team and split them up into two datasets, one for the home team and one for the away team.
