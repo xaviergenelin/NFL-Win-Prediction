@@ -58,6 +58,16 @@ shinyUI(navbarPage(
           The data was extracted from ESPN using web scraping and the file can be located",
           a(href = originalDataLink, "here"),
           " under scoresFull.csv",
+          "The dataset has statistics for both teams in each game. This data set was manipulated to get single team data. The code
+          used to create this dataset and other datasets used throughout the app can be found ",
+          a(href = "https://github.com/xaviergenelin/NFL-Win-Prediction", "here"),
+          " under Data Prep.Rmd. There was a metric added to the dataset called ",
+          a(href = "https://en.wikipedia.org/wiki/Elo_rating_system", "Elo"),
+          ". This is taken from ",
+          a(href = "https://fivethirtyeight.com/", "FiveThrityEight"),
+          " which use Elo in their own predictions. A description of how they do their predictions can be found ",
+          a(href = "https://fivethirtyeight.com/methodology/how-our-nfl-predictions-work/", "here"),
+          " along with other information about the Elo value.",
           
           # create a new paragraph explaining the manipulation done to the data set
           br(),
@@ -67,9 +77,9 @@ shinyUI(navbarPage(
           h3("Tabs"),
           
           tags$ul(
-            tags$li("Data: Show the raw data used throughout the app"),
+            tags$li("Data: Show the raw team data used throughout the app as well as the original game data"),
             
-            tags$li("Data Exploration: Allows the user to visualize and summarize the data"),
+            tags$li("Data Exploration: Allows the user to visualize and summarize the data for the individual teams and for games"),
             
             tags$li("Modeling: Information about 3 different models that are used to predict a winner based on different inputs")
           )
@@ -441,7 +451,7 @@ shinyUI(navbarPage(
           will need to be a maximum of the input if possible. 
           These weeks before the prediction will need to be aggregated throughout to update how well the team is doing. 
           The first week  in the time range they select is basically the starting point of what they're interested in. 
-          So we don't care about anything that happened before it. The elo rating (if they choose to use it) will be the 
+          So we don't care about anything that happened before it. The Elo rating (if they choose to use it) will be the 
           only thing that takes anything outside this window into account.",
             
             h4("Logistic Regression"),

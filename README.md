@@ -9,7 +9,9 @@ Current packages used:
 - `tidyverse`: data manipulation and visualization
 - `shinyWidgets`: adds in more functionality for Shiny   
 - `caret`: machine learning  
-- `plotly`: interactive graphs
+- `plotly`: interactive graphs  
+- `teamcolors`: gets more information about each team such as primary colors, division, and conference  
+- `jsonlite`: access an API to retrieve additional data on the teams
 
 
 To install the packages run the following code:
@@ -20,6 +22,8 @@ install.packages("tidyverse")
 install.packages("shinyWidgets")
 install.packages("caret")
 install.packages("plotly")
+install.packages("teamcolors")
+install.packages("jsonlite")
 ```
 
 ## Code to run the application 
