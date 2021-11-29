@@ -149,7 +149,8 @@ shinyUI(navbarPage(
             label = "Choose a data set",
             choiceNames = c("Team Data", "Game Data"),
             choiceValues = c("teamDat", "gameDat"),
-            selected = "teamDat"
+            selected = "teamDat",
+            inline = TRUE
             
           ),
           
@@ -168,6 +169,23 @@ shinyUI(navbarPage(
               multiple = TRUE,
               options = pickerOptions(actionsBox = TRUE)
             ),
+            
+            # pickerInput(
+            #   inputId = "conferenecFilterTeam",
+            #   label = "Conference(s)",
+            #   choices = sort(unique(teamData$conference)),
+            #   selected = unique(teamData$conference),
+            #   multiple = TRUE
+            # ),
+            # 
+            # pickerInput(
+            #   inputId = "divisionFilterTeam",
+            #   label = "Division(s)",
+            #   choices = sort(unique(teamData$division)),
+            #   selected = unique(teamData$division),
+            #   multiple = TRUE,
+            #   options = pickerOptions(actionsBox = TRUE)
+            # ),
             
             pickerInput(
               inputId = "weeksFilterTeam",
@@ -198,7 +216,8 @@ shinyUI(navbarPage(
               # histogram and scatter plot for now. Not sure what they'll be
               choiceValues = c("lineGraphTeam", "scatterPlotTeam"),
               choiceNames = c("Line Graph", "Scatter Plot"),
-              selected = "lineGraphTeam"
+              selected = "lineGraphTeam",
+              inline = TRUE
             ),
             
             # histogram/first plot options
@@ -210,7 +229,7 @@ shinyUI(navbarPage(
               selectInput(
                 inputId = "lineVarTeam",
                 label = "Select the stat",
-                choices = colnames(teamData)[6:50],
+                choices = colnames(teamData)[6:46],
                 selected = "offPassYds",
                 multiple = FALSE
               )
@@ -225,7 +244,7 @@ shinyUI(navbarPage(
               selectInput(
                 inputId = "xVarTeam",
                 label = "Select an X variable",
-                choices = colnames(teamData)[6:50],
+                choices = colnames(teamData)[6:46],
                 selected = "offTotalYds"
               ),
               
@@ -233,7 +252,7 @@ shinyUI(navbarPage(
               selectInput(
                 inputId = "yVarTeam",
                 label = "Select a Y variable",
-                choices = colnames(teamData)[6:50],
+                choices = colnames(teamData)[6:46],
                 selected = "defTotalYds"
               )
             ),
@@ -245,22 +264,23 @@ shinyUI(navbarPage(
               inputId = "summaryTypeTeam",
               label = "Summary Type",
               # numeric and something else as the numerical summaries
-              choiceValues = c("numericTeam", "otherTeam"),
-              choiceNames = c("Numeric", "Second Summary"),
-              selected = "numericTeam"
+              choiceValues = c("numericTeam", "totAvgTeam"),
+              choiceNames = c("Numeric", "Totals and Averages"),
+              selected = "numericTeam",
+              inline = TRUE
             ),
             
             # numeric summary options
             conditionalPanel(
-              condition = "input.summaryType == 'numeric'",
+              condition = "input.summaryTypeTeam == 'numericTeam'",
               
               # select the variables for the numeric summary table
               pickerInput(
                 inputId = "numVarsTeam",
                 label = "Select the variable(s) to summarize",
                 # excludes week, season, team, win columns
-                choices = colnames(teamData)[6:50],
-                selected = colnames(teamData)[6:50],
+                choices = colnames(teamData)[6:46],
+                selected = colnames(teamData)[6:46],
                 multiple = TRUE,
                 options = pickerOptions(actionsBox = TRUE,
                                         liveSearch = TRUE)
@@ -268,14 +288,18 @@ shinyUI(navbarPage(
             ),
           
             conditionalPanel(
-              condition = "input.summaryType == 'other'",
+              condition = "input.summaryTypeTeam == 'totAvgTeam'",
               
-              selectInput(
-                inputId = "otherVars",
-                label = "What summary is this going to be?",
-                choices = c("No idea", "Kind of have an idea", "Lol I have no clue")
+              numericInput(
+                inputId = "avgRounding",
+                label = "Number of digits to round the averages",
+                value = 2,
+                min = 0,
+                max = 10,
+                step = 1
               )
-            )
+            ),
+          
 
           ), # end of conditional panel for the team data
           
