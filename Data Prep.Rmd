@@ -257,6 +257,10 @@ teamDiv[18, 1] <- "St. Louis Rams"
 
 teamData <- merge(teamData, teamDiv, by.x = c("team"), by.y = c("name"))
 
+# move the win column to the end to simplify selecting columns for variables
+teamData <- teamData %>% relocate(win, .after = last_col())
+
 write_csv(teamData, "data/teamData.csv")
 ```
+
 
