@@ -283,6 +283,9 @@ teamData <- rbind(away, home)
 teamData <- teamData %>% arrange(season, team)
 ```
 
+
+
+
 ```{r}
 library(teamcolors)
 
@@ -292,7 +295,11 @@ teamDiv <- teamcolors %>%
   select(name, division) %>% 
   mutate(conference = str_sub(division, start = 1, end = 4))
 
-teamData <- merge(teamData, teamDiv, by.x = c("team"), by.y = c("name")) 
+# Change the rams and chargers to their old names to match the dataset
+teamDiv[17, 1] <- "San Diego Chargers"
+teamDiv[18, 1] <- "St. Louis Rams"
+
+teamData <- merge(teamData, teamDiv, by.x = c("team"), by.y = c("name"))
 
 write_csv(teamData, "data/teamData.csv")
 ```
