@@ -21,6 +21,23 @@ gameVisualData <- read_csv("data/visualGameData.csv")
 # dataset of the schedule
 schedule <- read_csv("data/schedule.csv")
 
+nflColors <- c("Arizona Cardinals" = "#97233f", "Atlanta Falcons" = "#a71930", 
+               "Baltimore Ravens" = "#241773", "Buffalo Bills" = "#00338d", 
+               "Carolina Panthers" = "#0085ca", "Chicago Bears" = "#0b162a", 
+               "Cincinnati Bengals" = "#000000", "Cleveland Browns" = "#fb4f14", 
+               "Dallas Cowboys" = "#002244", "Denver Broncos" = "#002244", 
+               "Detroit Lions" = "#005a8b", "Green Bay Packers" = "#203731", 
+               "Houston Texans" = "#03202f", "Indianapolis Colts" = "#002c5f", 
+               "Jacksonville Jaguars" = "#000000", "Kansas City Chiefs" = "#e31837", 
+               "Los Angeles Chargers" = "#002244", "Los Angeles Rams" = "#002244", 
+               "Miami Dolphins" = "#008e97", "Minnesota Vikings" = "#4f2683", 
+               "New England Patriots" = "#002244", "New Orleans Saints" = "#9f8958", 
+               "New York Giants" = "#0b2265", "New York Jets" = "#125740", 
+               "Oakland Raiders" = "#a5acaf", "Philadelphia Eagles" = "#004953", 
+               "Pittsburgh Steelers" = "#000000", "San Francisco 49ers" = "#aa0000", 
+               "Seattle Seahawks" = "#002244", "Tampa Bay Buccaneers" = "#d50a0a", 
+               "Tennessee Titans" = "#002244", "Washington Redskins" = "#773141")
+
 # Define server logic required to draw a histogram
 shinyServer(function(input, output,session) {
   
@@ -28,21 +45,15 @@ shinyServer(function(input, output,session) {
   # Data tab #
   ############
   
-  # subset the data on the data tab if the user wants any specific filters
-  newData <- reactive({
-    # give user the chance to arrange by season and week/team?
-    ### breks if season column isn't selected in the output, and week/team also
+  # data table in the data tab
+  output$dataTable <- renderDataTable({
+    
     newData <- teamData %>% 
       filter(season %in% input$seasonFilter,
              team %in% input$teamFilter,
              week %in% input$weekFilter) %>%
-      select(input$columnFilter) 
-  })
-  
-  # data table in the data tab
-  output$dataTable <- renderDataTable({
-    
-    newData()
+      arrange(season, team, week) %>%
+      select(input$columnFilter)
     
   })
   
@@ -54,7 +65,9 @@ shinyServer(function(input, output,session) {
     content = function(file){
       write.csv(teamData %>% filter(season %in% input$seasonFilter,
                                    team %in% input$teamFilter,
-                                   week %in% input$weekFilter),
+                                   week %in% input$weekFilter) %>%
+                  arrange(season, team, week) %>%
+                  select(input$columnFilter),
                 file,
                 row.names = FALSE)
     }
@@ -78,7 +91,8 @@ shinyServer(function(input, output,session) {
   output$lineGraphTeam <- renderPlotly({
     
     linePlot <- ggplot(data = graphDataTeam(), aes(x = date, group = team, color = team)) +
-      geom_line(aes_string(y = input$lineVarTeam))
+      geom_line(aes_string(y = input$lineVarTeam)) +
+      scale_color_manual(values = nflColors, aesthetics = c("color"))
     
     ggplotly(linePlot, tooltip = c("x", "y", "group"))
   })
@@ -89,7 +103,7 @@ shinyServer(function(input, output,session) {
 
     plot <- ggplot(data = graphDataTeam(), aes_string(x = input$xVarTeam, y = input$yVarTeam)) +
       geom_jitter(aes(color = win)) +
-      scale_color_manual(values = c("red", "black"))
+      scale_color_manual(values = c("#d7181c", "#2c7bb6"))
     
     ggplotly(plot)
     
@@ -110,6 +124,45 @@ shinyServer(function(input, output,session) {
     numericSum <- do.call(cbind, lapply(filteredData, summary))
     
     as.data.frame(t(numericSum))
+  })
+  
+  # the team summary table
+  output$teamSummary <- renderDT({
+    
+    # filter the 
+    teamSumData <- teamData %>%
+      filter(team %in% input$teamsFilterTeam,
+             season %in% input$seasonsFilterTeam,
+             week %in% input$weeksFilterTeam) %>%
+      select(-c(date,  division, conference, defRushAtt, defPassComp, defPassAtt, defSackYdsLost, 
+                defNetPassYds, offRushAtt, offPassAtt, offSackYdsLost, offNetPassYds, elo, top, 
+                def3rdPerc, def4thPerc, off3rdPerc, off4thPerc, offPenYds))
+    
+    teamSumData$win <- as.numeric(teamSumData$win)
+    
+    results <- teamSumData %>%
+      group_by(team, season) %>%
+      summarize(
+        "Wins" = sum(win),
+        "Games Played" = length(win),
+        # offensive stats
+        "Total Points" = sum(offPoints),
+        "Off PPG" = round(mean(offPoints), input$avgRounding),
+        # defensive stats
+        "Total Points Against" = sum(defPoints),
+        "Def PPG" = round(mean(defPoints), input$avgRounding)
+      ) %>%
+      arrange(season, team)
+    
+    results <- results %>%
+      group_by(season) %>%
+      mutate("Off PPG Rank" = order(order(`Off PPG`, decreasing = TRUE)),
+             "Def PPG Rank" = order(order(`Def PPG`, decreasing = FALSE))
+      ) 
+    
+    results <- results[, c("season", "team", "Wins", "Games Played", "Total Points", "Off PPG", 
+                           "Off PPG Rank", "Total Points Against", "Def PPG", "Def PPG Rank")]
+
   })
   
   #####################
