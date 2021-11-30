@@ -240,26 +240,27 @@ visData <- gameData %>%
 write_csv(visData, "data/visualGameData.csv")
 ```
 
-```{r}
-colnames()
-```
-
-
 # Team Data
 
 Gets offensive and defensive data for each team in each game they play. Will be used in some of the data visualization to give the user a team level versus a game level
 
 ```{r}
-# add in the 3rd and 4th down percentages 
+# add in the 3rd and 4th down percentages, offensive and defensive pass comp % and rush yards per carry 
 gameData <- gameData %>%
   mutate(home3rdPerc = ifelse(home3rdAtt == 0, 0, home3rdConv/home3rdAtt),
          home4thPerc = ifelse(home4thAtt == 0, 0, home4thConv/home4thAtt),
          away3rdPerc = ifelse(away3rdAtt == 0, 0, away3rdConv/away3rdAtt),
-         away4thPerc = ifelse(away4thAtt == 0, 0, away4thConv/away4thAtt))
+         away4thPerc = ifelse(away4thAtt == 0, 0, away4thConv/away4thAtt),
+         homeCompPerc = homePassComp / homePassAtt,
+         awayCompPerc = awayPassComp / awayPassAtt,
+         homeRushYPC = homeRushAtt / homeRushYds,
+         awayRushYPC = awayRushAtt / awayRushYds)
 
 home <- gameData %>%
   select("season", "week", "date", "homeTeam", homeWin, starts_with("home"), starts_with("H"), starts_with("away"), starts_with("A"), -c(AFinal, HFinal, awayTeam, awayAbb, awayElo, awayTOP, awayPenYds, awayNumPen, ATotalPlays, homeAbb, home3rdAtt, home3rdConv, home4thAtt, home4thConv, away3rdAtt, away3rdConv, away4thAtt, away4thConv)) %>%
-  rename("team" = "homeTeam", "win" = "homeWin") %>%
+  rename("team" = "homeTeam") %>%
+  mutate("win" = ifelse(homeWin == 1, 1, 0)) %>%
+  select(-homeWin) %>%
   rename_at(vars(starts_with("home")), funs(paste0("off", substring(., 5)))) %>%
   rename_at(vars(starts_with("H")), funs(paste0("off", substring(., 2)))) %>%
   rename_at(vars(starts_with("away")), funs(paste0("def", substring(., 5)))) %>%
@@ -268,7 +269,9 @@ home <- gameData %>%
 
 away <- gameData %>%
   select("season", "week", "date", "awayTeam", homeWin, starts_with("home"), starts_with("H"), starts_with("away"), starts_with("A"), -c(AFinal, HFinal, homeTeam, homeAbb, homeElo, homeTOP, homePenYds, homeNumPen, HTotalPlays, awayAbb, home3rdAtt, home3rdConv, home4thAtt, home4thConv, away3rdAtt, away3rdConv, away4thAtt, away4thConv)) %>%
-  rename("team" = "awayTeam", "win" = "homeWin") %>%
+  rename("team" = "awayTeam") %>%
+  mutate("win" = ifelse(homeWin == 0, 1, 0)) %>%
+  select(-homeWin) %>%
   rename_at(vars(starts_with("away")), funs(paste0("off", substring(., 5)))) %>%
   rename_at(vars(starts_with("A")), funs(paste0("off", substring(., 2)))) %>%
   rename_at(vars(starts_with("home")), funs(paste0("def", substring(., 5)))) %>%
