@@ -139,7 +139,7 @@ gameData <- merge(gameData, eloData, by = c("season", "homeAbb", "awayAbb", "HFi
 
 ```
 
-# Prediction Data
+# Scheule Data
 
 Get the schedule of games in the dataset
 
@@ -149,51 +149,6 @@ schedule <- gameData %>%
   arrange("season", "week")
 
 write_csv(schedule, "data/schedule.csv")
-```
-
-Get the offensive and defensive stats for each team and split them up into two datasets, one for the home team and one for the away team.
-
-```{r}
-home <- gameData %>%
-  select("season", "week", starts_with("home"), starts_with("H"), starts_with("away"), starts_with("A"), -c(AFinal, HFinal, homeWin, awayTeam, awayAbb, awayElo, awayTOP, awayPenYds, awayNumPen, ATotalPlays)) %>%
-  rename("team" = "homeTeam") %>%
-  rename_at(vars(starts_with("home")), funs(paste0("off", substring(., 5)))) %>%
-  rename_at(vars(starts_with("H")), funs(paste0("off", substring(., 2)))) %>%
-  rename_at(vars(starts_with("away")), funs(paste0("def", substring(., 5)))) %>%
-  rename_at(vars(starts_with("A")), funs(paste0("def", substring(., 2)))) %>%
-  rename("abb" = "offAbb")
-
-away <- gameData %>%
-  select("season", "week", starts_with("home"), starts_with("H"), starts_with("away"), starts_with("A"), -c(AFinal, HFinal, homeWin, homeTeam, homeAbb, homeElo, homeTOP, homePenYds, homeNumPen, HTotalPlays)) %>%
-  rename("team" = "awayTeam") %>%
-  rename_at(vars(starts_with("away")), funs(paste0("off", substring(., 5)))) %>%
-  rename_at(vars(starts_with("A")), funs(paste0("off", substring(., 2)))) %>%
-  rename_at(vars(starts_with("home")), funs(paste0("def", substring(., 5)))) %>%
-  rename_at(vars(starts_with("H")), funs(paste0("def", substring(., 2)))) %>%
-  rename("abb" = "offAbb")
-
-```
-
-Combine the home and away datasets onto the schedule. This will get used to average throughout a season in the siny app to get average stats for a matchup based on how each team is doing.
-
-```{r}
-# get the stats of the away team
-allData <- left_join(schedule, away, by = c("season" = "season", "week" = "week", "awayAbb" = "abb", "awayTeam" = "team"))
-
-# label the stats as Away
-colnames(allData)[9:53] <- paste0(colnames(allData)[9:53], "Away")
-
-# get the stats for the home team
-allData <- left_join(allData, home, by = c("season" = "season", "week" = "week", "homeAbb" = "abb", "homeTeam" = "team"))
-
-# label the stats as Home
-colnames(allData)[54:98] <- paste0(colnames(allData)[54:98], "Home")
-```
-
-Save this dataset into a csv.
-
-```{r}
-write_csv(allData, "data/allData.csv")
 ```
 
 # Visual Data
@@ -257,7 +212,7 @@ gameData <- gameData %>%
          awayRushYPC = awayRushAtt / awayRushYds)
 
 home <- gameData %>%
-  select("season", "week", "date", "homeTeam", homeWin, starts_with("home"), starts_with("H"), starts_with("away"), starts_with("A"), -c(AFinal, HFinal, awayTeam, awayAbb, awayElo, awayTOP, awayPenYds, awayNumPen, ATotalPlays, homeAbb, home3rdAtt, home3rdConv, home4thAtt, home4thConv, away3rdAtt, away3rdConv, away4thAtt, away4thConv)) %>%
+  select("season", "week", "date", "homeTeam", homeWin, starts_with("home"), starts_with("H"), starts_with("away"), starts_with("A"), -c(awayTeam, awayAbb, awayElo, awayTOP, awayPenYds, awayNumPen, ATotalPlays, homeAbb, home3rdAtt, home3rdConv, home4thAtt, home4thConv, away3rdAtt, away3rdConv, away4thAtt, away4thConv)) %>%
   rename("team" = "homeTeam") %>%
   mutate("win" = ifelse(homeWin == 1, 1, 0)) %>%
   select(-homeWin) %>%
@@ -268,7 +223,7 @@ home <- gameData %>%
   rename(elo = "offElo", top = "offTOP")
 
 away <- gameData %>%
-  select("season", "week", "date", "awayTeam", homeWin, starts_with("home"), starts_with("H"), starts_with("away"), starts_with("A"), -c(AFinal, HFinal, homeTeam, homeAbb, homeElo, homeTOP, homePenYds, homeNumPen, HTotalPlays, awayAbb, home3rdAtt, home3rdConv, home4thAtt, home4thConv, away3rdAtt, away3rdConv, away4thAtt, away4thConv)) %>%
+  select("season", "week", "date", "awayTeam", homeWin, starts_with("home"), starts_with("H"), starts_with("away"), starts_with("A"), -c(homeTeam, homeAbb, homeElo, homeTOP, homePenYds, homeNumPen, HTotalPlays, awayAbb, home3rdAtt, home3rdConv, home4thAtt, home4thConv, away3rdAtt, away3rdConv, away4thAtt, away4thConv)) %>%
   rename("team" = "awayTeam") %>%
   mutate("win" = ifelse(homeWin == 0, 1, 0)) %>%
   select(-homeWin) %>%
@@ -280,11 +235,12 @@ away <- gameData %>%
 
 teamData <- rbind(away, home)
 
-teamData <- teamData %>% arrange(season, team)
+teamData <- teamData %>% 
+  arrange(season, team) %>% 
+  mutate(offPoints = offFinal,
+         defPoints = defFinal) %>%
+  select(-c(offFinal, defFinal))
 ```
-
-
-
 
 ```{r}
 library(teamcolors)
