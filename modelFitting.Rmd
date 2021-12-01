@@ -18,7 +18,7 @@ library(teamcolors)
 cols <- show_sport_col("football")
 
 colors <- cols$data
-colnames(modelData)
+colnames(teamData)
 ```
 
 ```{r}
@@ -28,65 +28,72 @@ teamData <- teamData %>% filter(season == 2009, between(week, 2, 9))
 
 summedData <- teamData %>%
   group_by(team) %>%
+  arrange(team, week) %>%
   mutate(
-   defRushAtt = cummean(defRushAtt) 
-  ,defRushYds = cummean(defRushYds)
-  ,defRushTD = cummean(defRushTD)
-  ,defPassComp = cummean(defPassComp) 
-  ,defPassAtt = cummean(defPassAtt) 
-  ,defPassYds = cummean(defPassYds) 
-  ,defPassTD = cummean(defPassTD)
-  ,defPassInt = cummean(defPassInt) 
-  ,defTimesSacked = cummean(defTimesSacked) 
-  ,defSackYdsLost = cummean(defSackYdsLost) 
-  ,defFum = cummean(defFum) 
-  ,defFumLost = cummean(defFumLost)
-  ,def3rdPerc = cummean(def3rdPerc) 
-  ,def4thPerc = cummean(def4thPerc)
-  ,defFirstDowns = cummean(defFirstDowns)
-  ,defNetPassYds = cummean(defNetPassYds) 
-  ,defTotalYds = cummean(defTotalYds) 
-  ,defTurnovers = cummean(defTurnovers) 
-  ,offRushAtt = cummean(offRushAtt) 
-  ,offRushYds = cummean(offRushYds)
-  ,offRushTD = cummean(offRushTD) 
-  ,offPassComp = cummean(offPassComp) 
-  ,offPassAtt = cummean(offPassAtt) 
-  ,offPassYds = cummean(offPassYds) 
-  ,offPassTD = cummean(offPassTD)
-  ,offPassInt = cummean(offPassInt) 
-  ,offTimesSacked = cummean(offTimesSacked) 
-  ,offSackYdsLost = cummean(offSackYdsLost) 
-  ,offFum = cummean(offFum) 
-  ,offFumLost = cummean(offFumLost)
-  ,offNumPen = cummean(offNumPen) 
-  ,offPenYds = cummean(offPenYds) 
-  ,off3rdPerc = cummean(off3rdPerc) 
-  ,off4thPerc = cummean(off4thPerc)
-  ,top = cummean(top) 
-  ,elo = cummean(elo) 
-  ,offFirstDowns = cummean(offFirstDowns) 
-  ,offNetPassYds = cummean(offNetPassYds)
-  ,offTotalYds = cummean(offTotalYds) 
-  ,offTurnovers = cummean(offTurnovers) 
-  ,offTotalPlays = cummean(offTotalPlays)
+    defRushAtt = cummean(defRushAtt)
+    ,defRushYds = cummean(defRushYds)
+    ,defRushTD = cummean(defRushTD)
+    ,defPassComp = cummean(defPassComp)
+    ,defPassAtt = cummean(defPassAtt)
+    ,defPassYds = cummean(defPassYds)
+    ,defPassTD = cummean(defPassTD)
+    ,defPassInt = cummean(defPassInt)
+    ,defTimesSacked = cummean(defTimesSacked)
+    ,defSackYdsLost = cummean(defSackYdsLost)
+    ,defFum	 = cummean(defFum)
+    ,defFumLost = cummean(defFumLost)
+    ,def3rdPerc = cummean(def3rdPerc)
+    ,def4thPerc = cummean(def4thPerc)
+    ,defCompPerc = cummean(defCompPerc)
+    ,defRushYPC = cummean(defRushYPC)
+    ,defFirstDowns = cummean(defFirstDowns)
+    ,defNetPassYds = cummean(defNetPassYds)
+    ,defTotalYds	 = cummean(defTotalYds)
+    ,defTurnovers = cummean(defTurnovers)
+    ,offRushAtt = cummean(offRushAtt)
+    ,offRushYds = cummean(offRushYds)
+    ,offRushTD	 = cummean(offRushTD)
+    ,offPassComp = cummean(offPassComp)
+    ,offPassAtt = cummean(offPassAtt)
+    ,offPassYds = cummean(offPassYds)
+    ,offPassTD = cummean(offPassTD)
+    ,offPassInt = cummean(offPassInt)
+    ,offTimesSacked = cummean(offTimesSacked)
+    ,offSackYdsLost = cummean(offSackYdsLost)
+    ,offFum = cummean(offFum)
+    ,offFumLost = cummean(offFumLost)
+    ,offNumPen = cummean(offNumPen)
+    ,offPenYds = cummean(offPenYds)
+    ,top = cummean(top)
+    ,elo = elo
+    ,off3rdPerc = cummean(off3rdPerc)
+    ,off4thPerc = cummean(off4thPerc)
+    ,offCompPerc = cummean(offCompPerc)
+    ,offRushYPC = cummean(offRushYPC)
+    ,offFirstDowns = cummean(offFirstDowns)
+    ,offNetPassYds = cummean(offNetPassYds)
+    ,offTotalYds = cummean(offTotalYds)
+    ,offTurnovers = cummean(offTurnovers)
+    ,offTotalPlays = cummean(offTotalPlays)
+    ,offPoints = cummean(offPoints)
+    ,defPoints = cummean(defPoints)
   ) %>%
   arrange(season, team, week) %>%
-  select(-win)
+  select(-c(win, division, conference))
          
 ```
 
 ```{r}
 schedule <- read_csv("data/schedule.csv")
-schedule <- schedule %>% filter(season == 2009, between(week, 2, 9))
+schedule <- schedule %>% filter(season == 2009, between(week, 2, 9)) %>% select(-c(homeAbb, awayAbb))
 
 modeling <- left_join(schedule, summedData, by = c("season" = "season", "week" = "week", "date" = "date", "awayTeam" = "team"))
 
-colnames(modeling)[9:49] <- paste0(colnames(modeling)[9:49], "Away")
+colnames(modeling)[7:53] <- paste0(colnames(modeling)[7:53], "Away")
 
 modeling <- left_join(modeling, summedData, by = c("season" = "season", "week" = "week", "date" = "date", "homeTeam" = "team"))
 
-colnames(modeling)[50:90] <- paste0(colnames(modeling)[50:90], "Home")
+colnames(modeling)[54:100] <- paste0(colnames(modeling)[54:100], "Home")
 
 # # get the stats of the away team
 # allData <- left_join(schedule, away, by = c("season" = "season", "week" = "week", "awayAbb" = "abb", "awayTeam" = "team"))
@@ -98,48 +105,50 @@ colnames(modeling)[50:90] <- paste0(colnames(modeling)[50:90], "Home")
 ```{r}
 modelData <- modeling %>%
   mutate(
-    defRushAttDiff = defRushAttHome - defRushAttAway
-    ,defRushYdsDiff = defRushYdsHome - defRushYdsAway
-    ,defRushTDDiff = defRushTDHome - defRushTDAway
-    ,defPassCompDiff = defPassCompHome - defPassCompAway
-    ,defPassAttDiff = defPassAttHome - defPassAttAway
-    ,defPassYdsDiff = defPassYdsHome - defPassYdsAway
-    ,defPassTDDiff = defPassTDHome - defPassTDAway
-    ,defPassIntDiff = defPassIntHome - defPassIntAway
-    ,defTimesSackedDiff = defTimesSackedHome - defTimesSackedAway
-    ,defSackYdsLostDiff = defSackYdsLostHome - defSackYdsLostAway
-    ,defFumDiff = defFumHome - defFumAway
-    ,defFumLostDiff = defFumLostHome - defFumLostAway
-    ,def3rdPercDiff = def3rdPercHome - def3rdPercAway
-    ,def4thPercDiff = def4thPercHome - def4thPercAway
-    ,defFirstDownsDiff = defFirstDownsHome - defFirstDownsAway
-    ,defNetPassYdsDiff = defNetPassYdsHome - defNetPassYdsAway
-    ,defTotalYdsDiff = defTotalYdsHome - defTotalYdsAway
-    ,defTurnoversDiff = defTurnoversHome - defTurnoversAway
-    ,offRushAttDiff = offRushAttHome - offRushAttAway
-    ,offRushYdsDiff = offRushYdsHome - offRushYdsAway
-    ,offRushTDDiff = offRushTDHome - offRushTDAway
-    ,offPassCompDiff = offPassCompHome - offPassCompAway
-    ,offPassAttDiff = offPassAttHome - offPassAttAway
-    ,offPassYdsDiff = offPassYdsHome - offPassYdsAway
-    ,offPassTDDiff = offPassTDHome - offPassTDAway
-    ,offPassIntDiff = offPassIntHome - offPassIntAway
-    ,offTimesSackedDiff = offTimesSackedHome - offTimesSackedAway
-    ,offSackYdsLostDiff = offSackYdsLostHome - offSackYdsLostAway
-    ,offFumDiff = offFumHome - offFumAway
-    ,offFumLostDiff = offFumLostHome - offFumLostAway
-    ,offNumPenDiff = offNumPenHome - offNumPenAway
-    ,offPenYdsDiff = offPenYdsHome - offPenYdsAway
-    ,topDiff = topHome - topAway
-    ,eloDiff = eloHome - eloAway
-    ,off3rdPercDiff = off3rdPercHome - off3rdPercAway
-    ,off4thPercDiff = off4thPercHome - off4thPercAway
-    ,offFirstDownsDiff = offFirstDownsHome - offFirstDownsAway
-    ,offNetPassYdsDiff = offNetPassYdsHome - offNetPassYdsAway
-    ,offTotalYdsDiff = offTotalYdsHome - offTotalYdsAway
-    ,offTurnoversDiff = offTurnoversHome - offTurnoversAway
-    ,offTotalPlaysDiff = offTotalPlaysHome - offTotalPlaysAway
-    ,homeWin = as.factor(homeWin)
+ defRushYdsDiff = defRushYdsHome - defRushYdsAway
+,defRushTDDiff = defRushTDHome - defRushTDAway
+,defPassCompDiff = defPassCompHome - defPassCompAway
+,defPassAttDiff = defPassAttHome - defPassAttAway
+,defPassYdsDiff = defPassYdsHome - defPassYdsAway
+,defPassTDDiff = defPassTDHome - defPassTDAway
+,defPassIntDiff = defPassIntHome - defPassIntAway
+,defTimesSackedDiff = defTimesSackedHome - defTimesSackedAway
+,defSackYdsLostDiff = defSackYdsLostHome - defSackYdsLostAway
+,defFumLostDiff = defFumLostHome - defFumLostAway
+,defthirdPercDiff = def3rdPercHome - def3rdPercAway
+,deffourthPercDiff = def4thPercHome - def4thPercAway
+,defCompPercDiff = defCompPercHome - defCompPercAway
+,defRushYPCDiff = defRushYPCHome - defRushYPCAway
+,defFirstDownsDiff = defFirstDownsHome - defFirstDownsAway
+,defNetPassYdsDiff = defNetPassYdsHome - defNetPassYdsAway
+,defTurnoversDiff = defTurnoversHome - defTurnoversAway
+,offRushAttDiff = offRushAttHome - offRushAttAway
+,offRushYdsDiff = offRushYdsHome - offRushYdsAway
+,offPassCompDiff = offPassCompHome - offPassCompAway
+,offPassAttDiff = offPassAttHome - offPassAttAway
+,offPassYdsDiff = offPassYdsHome - offPassYdsAway
+,offPassTDDiff = offPassTDHome - offPassTDAway
+,offPassIntDiff = offPassIntHome - offPassIntAway
+,offTimesSackedDiff = offTimesSackedHome - offTimesSackedAway
+,offSackYdsLostDiff = offSackYdsLostHome - offSackYdsLostAway
+,offFumDiff = offFumHome - offFumAway
+,offFumLostDiff = offFumLostHome - offFumLostAway
+,offNumPenDiff = offNumPenHome - offNumPenAway
+,offPenYdsDiff = offPenYdsHome - offPenYdsAway
+,topDiff = topHome - topAway
+,eloDiff = eloHome - eloAway
+,offthirdPercDiff = off3rdPercHome - off3rdPercAway
+,offfourthPercDiff = off4thPercHome - off4thPercAway
+,offCompPercDiff = offCompPercHome - offCompPercAway
+,offRushYPCDiff = offRushYPCHome - offRushYPCAway
+,offFirstDownsDiff = offFirstDownsHome - offFirstDownsAway
+,offNetPassYdsDiff = offNetPassYdsHome - offNetPassYdsAway
+,offTotalYdsDiff = offTotalYdsHome - offTotalYdsAway
+,offTurnoversDiff = offTurnoversHome - offTurnoversAway
+,offTotalPlaysDiff = offTotalPlaysHome - offTotalPlaysAway
+,offPointsDiff = offPointsHome - offPointsAway
+,defPointsDiff = defPointsHome - defPointsAway
+,homeWin = as.factor(homeWin)
   ) %>%
   select(-c(ends_with("Home"), ends_with("Away")))
 
@@ -159,8 +168,13 @@ logModel$results
 logPred <- predict(logModel, newdata = testData)
 
 mean(testData$homeWin == logPred)
-
 ```
+
+```{r}
+# logistical model summary
+round(as.data.frame(summary(logModel)$coef), 3)
+```
+
 
 ```{r}
 # random forest
@@ -177,15 +191,27 @@ mean(testData$homeWin == rfPred)
 ```
 
 ```{r}
+# important variables
+ggplot(varImp(rfModel, type = 2)) +
+  geom_col(fill = "purple")
+```
+
+
+```{r}
 # classification tree
 
 treeModel <- train(data = trainData, homeWin ~ offRushYdsDiff + offPassYdsDiff + offTurnoversDiff,
-                   method = "rpart", metric = "Accuracy" )
+                   method = "rpart", metric = "Accuracy")
 
 treeModel$results
 
 treePred <- predict(treeModel, newdata = testData)
 
 mean(testData$homeWin == treePred)
+```
+
+```{r}
+# tree diagram
+fancyRpartPlot(treeModel$finalModel)
 ```
 
