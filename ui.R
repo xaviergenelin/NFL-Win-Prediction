@@ -15,13 +15,13 @@ library(rattle)
 originalDataLink <- "https://www4.stat.ncsu.edu/~online/datasets/"
 
 # team data, shows offensive and defensive data throughout a season
-teamData <- read_csv("data/teamData.csv")
+teamData <- read_csv("data/teamData.csv", show_col_types = FALSE)
 
 # game data for the visuals
-gameVisualData <- read_csv("data/visualGameData.csv")
+gameVisualData <- read_csv("data/visualGameData.csv", show_col_types = FALSE)
 
 # data set of the schedule
-schedule <- read_csv("data/schedule.csv")
+schedule <- read_csv("data/schedule.csv", show_col_types = FALSE)
 
 # week vector. Using weeks from the dataframe gets thrown off by the bye weeks
 weeks <- c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21)
@@ -633,17 +633,18 @@ shinyUI(navbarPage(
             h3("Test Accuracies"),
             dataTableOutput("accuracyResults"),
             
-            # Logisitc Regression Results
+            # Logistic Regression Results
             h3("Logistic Summary"),
             dataTableOutput("logSummary"),
             
-            # Diagram of the best tree model
-            h3("Tree Summary"),
-            plotOutput("treeSummary"),
-            
             # Most important variables for the random forest model
             h3("Random Forest Summary"),
-            plotOutput("rfSummary")
+            plotOutput("rfSummary"),
+            
+            # Diagram of the best tree model
+            h3("Tree Summary"),
+            plotOutput("treeSummary")
+            
           )
 
         ),
@@ -653,6 +654,7 @@ shinyUI(navbarPage(
           title = "Prediction",
           
           sidebarPanel(
+            # select the type of model they want to predict for 
             radioButtons(
               inputId = "modelType",
               label = "Choose a Model to Predict",
@@ -664,11 +666,37 @@ shinyUI(navbarPage(
               choiceValues = c("logReg", "randFor", "classTree"),
               selected = "logReg",
               inline = TRUE
+            ),
+            
+            # start the prediction based on the inputs below
+            actionButton(
+              inputId = "startPrediction",
+              label = "Make Prediction"
+            ),
+            
+            # create a little space between the prediciton button and the variables
+            br(),
+            br(),
+            
+            conditionalPanel(
+              condition = "input.modelType == 'logReg'",
+              uiOutput("logPredVariables")
+            ),
+            
+            conditionalPanel(
+              condition = "input.modelType == 'randFor'",
+              uiOutput("rfPredVariables")
+            ),
+            
+            conditionalPanel(
+              condition = "input.modelType == 'classTree'",
+              uiOutput("treePredVariables")
             )
           ),
           
           mainPanel(
-            h3("Prediction Resutls")
+            h3("Prediction Resutls"),
+            dataTableOutput("userPred")
             
           )
         )

@@ -12,17 +12,17 @@ library(plotly)
 library(rattle)
 
 # load in the team data
-teamData <- read_csv("data/teamData.csv")
+teamData <- read_csv("data/teamData.csv", show_col_types = FALSE)
 
 teamData$win <- as.factor(teamData$win)
 teamData$week <- as.numeric(teamData$week)
 teamData$date <- as.Date(teamData$date)
 
 # game data for the visuals
-gameVisualData <- read_csv("data/visualGameData.csv")
+gameVisualData <- read_csv("data/visualGameData.csv", show_col_types = FALSE)
 
 # dataset of the schedule
-schedule <- read_csv("data/schedule.csv")
+schedule <- read_csv("data/schedule.csv", show_col_types = FALSE)
 
 # nfl colors to match the up with team for the line graph
 nflColors <- c("Arizona Cardinals" = "#97233f", "Atlanta Falcons" = "#a71930", 
@@ -358,10 +358,7 @@ shinyServer(function(input, output,session) {
     
     colnames(modeling)[54:100] <- paste0(colnames(modeling)[54:100], "Home")
     
-    output$testTable <- renderDataTable({
-      modeling
-    })
-    
+    # calculate the difference between the stats for the home and away teams in each matchup
     modelData <- modeling %>%
       mutate(
         defRushYdsDiff = defRushYdsHome - defRushYdsAway
@@ -411,7 +408,10 @@ shinyServer(function(input, output,session) {
       ) %>%
       select(-c(ends_with("Home"), ends_with("Away")))
     
-
+    # save values from selected range to be used in the model prediction section
+    write_csv(modeling, "./Fitted Models/modelData.csv")
+    
+    # create the training and testing data based on the week the user wants to predict for 
     testData <- modelData %>% filter(week == input$predWeek)
     trainData <- modelData %>% filter(week != input$predWeek)
     
@@ -451,7 +451,7 @@ shinyServer(function(input, output,session) {
                        tuneGrid = expand.grid(cp = cpVals))
 
     # test the models on the test set
-    progress$inc(0.9, detail = "Evaluating the test set performacne")
+    progress$inc(0.85, detail = "Evaluating the test set performacne")
 
     logPred <- predict(logModel, testData, type = "raw")
     rfPred <- predict(rfModel, testData, type = "raw")
@@ -464,8 +464,8 @@ shinyServer(function(input, output,session) {
     accPerc <- t(as.matrix(accuracies)) * 100
 
     colnames(accPerc) <- c("Logistic Regression", # logistic regression
-                           paste0("Tree with Cp = ", treeModel$bestTune$cp), # tree with best tuning parameter from selected
-                           paste0("Random Forest with mtry = ", rfModel$bestTune$mtry)
+                           paste0("Random Forest with mtry = ", rfModel$bestTune$mtry),
+                           paste0("Tree with Cp = ", treeModel$bestTune$cp) # tree with best tuning parameter from selected
                            )
 
     results <- as.data.frame(accPerc) %>%
@@ -500,6 +500,124 @@ shinyServer(function(input, output,session) {
     saveRDS(treeModel, "./Fitted Models/treeModel.rds")
 
   }) # end of the model fitting event
+  
+  ####################
+  # Model Prediction #
+  ####################
+  
+  # use the variables from the fitted models for prediction
+  
+  # logistic regression variables
+  output$logPredVariables <- renderUI({
+    
+    tags$ul(tagList(
+      lapply(input$logVars, function(var){
+        numericInput(
+          inputId = paste0(var, "Value"),
+          label = paste0("Select ", var, " Value"),
+          value = 0,
+          step = 0.1
+        )
+      })
+    ))
+  }) 
+  
+  # random forest model variables
+  output$rfPredVariables <- renderUI({
+    
+    tags$ul(tagList(
+      lapply(input$rfVars, function(var){
+        numericInput(
+          inputId = paste0(var, "Value"),
+          label = paste0("Select ", var, " Value"),
+          value = 0,
+          step = 0.1
+        )
+      })
+    ))
+  })
+  
+  # classification tree variables
+  output$treePredVariables <- renderUI({
+    tags$ul(tagList(
+      lapply(input$treeVars, function(var){
+        numericInput(
+          inputId = paste0(var, "Value"),
+          label = paste0("Select ", var, " Value"),
+          value = 1,
+          step = 0.1
+        )
+      })
+    ))
+  })
+  
+  # make predictions after the user clicks the button based on their inputs
+  observeEvent(input$startPrediction, {
+    
+    # get the model based on their input
+    # load in their selected model
+    if (input$modelType == "logReg") {
+      
+      # get the variables they selected for the logistic model
+      modelVars <- lapply(input$logVars, paste0, sep = "Value")
+      # get the logistic model that was fit
+      model <- readRDS("./Fitted Models/logModel.rds")
+      
+    } else if(input$modelType == "randFor"){
+      
+      # get the variables they selected for the random forest
+      modelVars <- lapply(input$rfVars, paste0, sep = "Value")
+      # get the logistic model that was fit
+      model <- readRDS("./Fitted Models/rfModel.rds")
+      
+    } else {
+      
+      # get the variables they selected for the tree model
+      modelVars <- lapply(input$treeVars, paste0, sep = "Value")
+      # get the logistic model that was fit
+      model <- readRDS("./Fitted Models/treeModel.rds")
+      
+    }
+    
+    # get a vector of their variables
+    inputVars <- c()
+    for(var in modelVars){
+      inputVars <- c(inputVars, input[[var]])
+    }
+    
+    inputVars <- t(matrix(inputVars))
+    
+    colnames(inputVars) <- str_remove_all(modelVars, pattern = "Value")
+    
+    userInputs <- as.data.frame(inputVars)
+    
+    
+    # get the probability of the home team winning or losing based on the inputted values
+    probPreds <- predict(model, userInputs, type = "prob")
+    
+    # get the class of the home team winning (1 or 0) based on the inputted values
+    classPred <- predict(model, userInputs, type = "raw")
+    
+    # change the class to be home or away instead of 0 and 1 
+    classPred <- ifelse(classPred == 1, "Home", "Away")
+    
+    # combine the class and probabilities into one
+    prediction <- cbind(classPred, round(probPreds, 3))
+    
+    # make the column names more clear for the user
+    colnames(prediction) <- c("Winning Team", 
+                              "Predicted Prob. of Away Team Winning", 
+                              "Predicted Prob. of Home Team Winning"
+                              )
+    
+    prediction <- as.data.frame(prediction)
+
+    # create the table that will show once the prediciton is made
+    output$userPred <- renderDataTable({
+      prediction
+    })
+    
+  }) # end of the prediction event
 
 })
 
