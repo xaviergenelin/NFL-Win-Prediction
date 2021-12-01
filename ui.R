@@ -526,13 +526,17 @@ shinyUI(navbarPage(
             uiOutput("trainWeeksInput"),
             
             h3("Logistic Regression"),
-            
+                      
             # logistic regression variables
             pickerInput(
               inputId = "logVars",
               label = "Logistic model variables",
               choices = sort(modelVars),
-              selected = c("eloDiff"),
+              selected = c("defRushYdsDiff", "defPassYdsDiff", "eloDiff", 
+                           "defTurnoversDiff", "offPointsDiff", "defPointsDiff", 
+                           "offTurnoversDiff", "defTimesSackedDiff", "offPenYdsDiff", 
+                           "offRushYPCDiff", "defRushYPCDiff", "topDiff",
+                           "offRushYdsDiff", "offPassYdsDiff"),
               multiple = TRUE,
               options = pickerOptions(actionsBox = TRUE,
                                       liveSearch = TRUE)
@@ -545,7 +549,11 @@ shinyUI(navbarPage(
               inputId = "rfVars",
               label = "Random Forest model variables",
               choices = sort(modelVars),
-              selected = c("eloDiff"),
+              selected = c("defRushYdsDiff", "defPassYdsDiff", "eloDiff", 
+                           "defTurnoversDiff", "offPointsDiff", "defPointsDiff", 
+                           "offTurnoversDiff", "defTimesSackedDiff", "offPenYdsDiff", 
+                           "offRushYPCDiff", "defRushYPCDiff", "topDiff",
+                           "offRushYdsDiff", "offPassYdsDiff"),
               multiple = TRUE,
               options = pickerOptions(actionsBox = TRUE,
                                       liveSearch = TRUE)
@@ -568,7 +576,11 @@ shinyUI(navbarPage(
               inputId = "treeVars",
               label = "Tree model variables",
               choices = sort(modelVars),
-              selected = c("eloDiff"),
+              selected = c("defRushYdsDiff", "defPassYdsDiff", "eloDiff", 
+                           "defTurnoversDiff", "offPointsDiff", "defPointsDiff", 
+                           "offTurnoversDiff", "defTimesSackedDiff", "offPenYdsDiff", 
+                           "offRushYPCDiff", "defRushYPCDiff", "topDiff",
+                           "offRushYdsDiff", "offPassYdsDiff"),
               multiple = TRUE,
               options = pickerOptions(actionsBox = TRUE,
                                       liveSearch = TRUE)
