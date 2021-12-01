@@ -1,6 +1,6 @@
 #
 # author: Xavier Genelin
-# date: 11/22/2021
+# date: 11/30/2021
 # purpose: the front end UI to explore nfl game data and predict a winner 
 #
 
@@ -9,6 +9,7 @@ library(tidyverse)
 library(DT)
 library(shinyWidgets)
 library(plotly)
+library(rattle)
 
 # link to the dataset
 originalDataLink <- "https://www4.stat.ncsu.edu/~online/datasets/"
@@ -25,8 +26,16 @@ schedule <- read_csv("data/schedule.csv")
 # week vector. Using weeks from the dataframe gets thrown off by the bye weeks
 weeks <- c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21)
 
-# visual game data
-#visualData <- read_csv("data/visualGameData.csv")
+# variables that will be in the models
+modelVars <- c("defRushYdsDiff", "defRushTDDiff", "defPassCompDiff", "defPassAttDiff", "defPassYdsDiff",
+               "defPassTDDiff","defPassIntDiff", "defTimesSackedDiff", "defSackYdsLostDiff", "defFumLostDiff",
+               "defthirdPercDiff","deffourthPercDiff", "defCompPercDiff", "defRushYPCDiff", "defFirstDownsDiff",
+               "defNetPassYdsDiff","defTurnoversDiff", "offRushAttDiff", "offRushYdsDiff", "offPassCompDiff",
+               "offPassAttDiff","offPassYdsDiff", "offPassTDDiff", "offPassIntDiff", "offTimesSackedDiff",
+               "offSackYdsLostDiff", "offFumDiff","offFumLostDiff", "offNumPenDiff", "offPenYdsDiff",
+               "topDiff", "eloDiff", "offthirdPercDiff", "offfourthPercDiff" , "offCompPercDiff", "offRushYPCDiff",
+               "offFirstDownsDiff", "offNetPassYdsDiff", "offTotalYdsDiff", "offTurnoversDiff","offTotalPlaysDiff",
+               "offPointsDiff", "defPointsDiff")
 
 # Define UI for application that draws a histogram
 shinyUI(navbarPage(
@@ -112,7 +121,7 @@ shinyUI(navbarPage(
           pickerInput(
             inputId = "seasonFilter",
             label = "Select season(s)",
-            choices = unique(teamData$season),
+            choices = sort(unique(teamData$season)),
             selected = unique(teamData$season),
             multiple = TRUE,
             options = pickerOptions(actionsBox = TRUE)
@@ -121,7 +130,7 @@ shinyUI(navbarPage(
           pickerInput(
             inputId = "weekFilter",
             label = "Select week(s)",
-            choices = weeks,
+            choices = sort(unique(teamData$week)),
             selected = weeks,
             multiple = TRUE,
             options = pickerOptions(actionsBox = TRUE)
@@ -174,48 +183,35 @@ shinyUI(navbarPage(
             pickerInput(
               inputId = "seasonsFilterTeam",
               label = "Season(s)",
-              choices = unique(teamData$season),
-              selected = unique(teamData$season),
+              choices = sort(unique(teamData$season)),
+              selected = sort(unique(teamData$season)),
               multiple = TRUE,
               options = pickerOptions(actionsBox = TRUE)
             ),
             
-            # pickerInput(
-            #   inputId = "conferenecFilterTeam",
-            #   label = "Conference(s)",
-            #   choices = sort(unique(teamData$conference)),
-            #   selected = unique(teamData$conference),
-            #   multiple = TRUE
-            # ),
-            # 
-            # pickerInput(
-            #   inputId = "divisionFilterTeam",
-            #   label = "Division(s)",
-            #   choices = sort(unique(teamData$division)),
-            #   selected = unique(teamData$division),
-            #   multiple = TRUE,
-            #   options = pickerOptions(actionsBox = TRUE)
-            # ),
+            pickerInput(
+              inputId = "conferenecFilterTeam",
+              label = "Conference(s)",
+              choices = sort(unique(teamData$conference)),
+              selected = unique(teamData$conference),
+              multiple = TRUE
+            ),
+            
+            # division filter based on conference if selected
+            uiOutput("divisionFilterInput"),
             
             pickerInput(
               inputId = "weeksFilterTeam",
               label = "Week(s)",
-              choices = weeks,
-              selected = weeks,
+              choices = sort(unique(teamData$week)),
+              selected = unique(teamData$week),
               multiple = TRUE,
               options = pickerOptions(actionsBox = TRUE)
             ),
             
-            pickerInput(
-              inputId = "teamsFilterTeam",
-              label = "Team(s)",
-              choices = unique(teamData$team),
-              selected = unique(teamData$team),
-              multiple = TRUE,
-              options = pickerOptions(actionsBox = TRUE,
-                                      liveSearch = TRUE)
-            ),
-            
+            # team filter based on conference and division if selected
+            uiOutput("teamFilterInput"),
+
             ### graph inputs
             h3("Graph Options"),
             
@@ -310,7 +306,6 @@ shinyUI(navbarPage(
               )
             ),
           
-
           ), # end of conditional panel for the team data
           
           ### game data options
@@ -359,13 +354,21 @@ shinyUI(navbarPage(
             
             h3("Graph Options"),
             
-            radioButtons(
-              inputId = "plotTypeGame",
-              label = "Plot Type",
-              choiceValues = c("scatterPlotGame", "otherGame"),
-              choiceNames = c("Scatter Plot", "Something Else"),
-              selected = "scatterPlotGame"
-            )
+            pickerInput(
+              inputId = "gameXVar",
+              label = "Select the X variable",
+              choices = colnames(gameVisualData)[4:30],
+              selected = "turnoverDiff",
+              multiple = FALSE
+            ),
+            
+            pickerInput(
+              inputId = "gameYVar",
+              label = "Select the X variable",
+              choices = colnames(gameVisualData)[4:30],
+              selected = "totalYdsDiff",
+              multiple = FALSE
+            ),
             
           ) # end of conditional panel for game Data 
 
@@ -503,7 +506,7 @@ shinyUI(navbarPage(
             selectInput(
               inputId = "seasonModel",
               label = "Select a season",
-              choices = unique(teamData$season),
+              choices = sort(unique(teamData$season)),
               selected = "2014",
               multiple = FALSE
             ),
@@ -511,8 +514,8 @@ shinyUI(navbarPage(
             # this is the week that'll be predicted, must be at least 2 to ensure that there is data from
             # the same season to be used as training
             numericInput(
-              inputId = "weekModel",
-              label = "Please select a week to predict",
+              inputId = "predWeek",
+              label = "Select a week to predict",
               value = 8,
               min = 2,
               max = 21,
@@ -524,32 +527,87 @@ shinyUI(navbarPage(
             
             h3("Logistic Regression"),
             
-            selectInput(
+            # logistic regression variables
+            pickerInput(
               inputId = "logVars",
-              label = "Select the variables to use in the logistic model",
-              choices = colnames(teamData),
-              selected = colnames(teamData),
-              multiple = TRUE
+              label = "Logistic model variables",
+              choices = sort(modelVars),
+              selected = c("eloDiff"),
+              multiple = TRUE,
+              options = pickerOptions(actionsBox = TRUE,
+                                      liveSearch = TRUE)
             ),
             
             h3("Random Forest"),
             
-            selectInput(
+            # random forest variables
+            pickerInput(
               inputId = "rfVars",
-              label = "Select the variables to use in the random forest model",
-              choices = colnames(teamData),
-              selected = colnames(teamData),
-              multiple = TRUE
+              label = "Random Forest model variables",
+              choices = sort(modelVars),
+              selected = c("eloDiff"),
+              multiple = TRUE,
+              options = pickerOptions(actionsBox = TRUE,
+                                      liveSearch = TRUE)
+            ),
+            
+            # allows for multiple values to be selected for mtry value
+            selectizeInput(
+              inputId = "mtryValues",
+              label = "Select up to 5 mtry values",
+              choices = 1:length(modelVars),
+              multiple = TRUE,
+              selected = c(3, 5, 10),
+              options = list(maxItems = 5)
             ),
             
             h3("Classification Tree"),
-            selectInput(
+            
+            # classifcation tree variables
+            pickerInput(
               inputId = "treeVars",
-              label = "Select the variables to use in the tree model",
-              choices = colnames(teamData),
-              selected = colnames(teamData),
-              multiple = TRUE
+              label = "Tree model variables",
+              choices = sort(modelVars),
+              selected = c("eloDiff"),
+              multiple = TRUE,
+              options = pickerOptions(actionsBox = TRUE,
+                                      liveSearch = TRUE)
             ),
+            
+            h4(tags$b("Complexity Parameter:")),
+            div(
+              numericInput(
+                inputId = "numCp",
+                label = "Number of Values",
+                min = 1, 
+                max = 5,
+                value = 3,
+                step = 1
+              ),
+              # puts the inputs side by side to save space
+              style = "display:inline-block"
+            ),
+            div(
+              numericInput(
+                inputId = "minCp",
+                label = "Min Cp",
+                min = 0, 
+                max = 100,
+                value = 0.01
+              ),
+              
+              # puts the inputs side by side to save space
+              style = "display:inline-block"
+            ),
+            div(
+              uiOutput("maxCpInput"),
+              
+              # puts the inputs side by side to save space
+              style = "display:inline-block"
+            ),
+
+            
+            br(),
             
             actionButton(
               inputId = "trainModels",
@@ -559,7 +617,21 @@ shinyUI(navbarPage(
           ),
           
           mainPanel(
-            "Model stuff"
+            # Overall Accuracies for the models
+            h3("Test Accuracies"),
+            dataTableOutput("accuracyResults"),
+            
+            # Logisitc Regression Results
+            h3("Logistic Summary"),
+            dataTableOutput("logSummary"),
+            
+            # Diagram of the best tree model
+            h3("Tree Summary"),
+            plotOutput("treeSummary"),
+            
+            # Most important variables for the random forest model
+            h3("Random Forest Summary"),
+            plotOutput("rfSummary")
           )
 
         ),
@@ -584,7 +656,8 @@ shinyUI(navbarPage(
           ),
           
           mainPanel(
-            "Prediction Stuff"
+            h3("Prediction Resutls")
+            
           )
         )
       

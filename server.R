@@ -1,12 +1,15 @@
 #
 # author: Xavier Genelin
-# date: 11/22/2021
+# date: 11/30/2021
 # purpose: the back end code to explore nfl game data and predict a winner 
 #
 
 library(shiny)
+library(tidyverse)
 library(DT)
+library(shinyWidgets)
 library(plotly)
+library(rattle)
 
 # load in the team data
 teamData <- read_csv("data/teamData.csv")
@@ -21,6 +24,7 @@ gameVisualData <- read_csv("data/visualGameData.csv")
 # dataset of the schedule
 schedule <- read_csv("data/schedule.csv")
 
+# nfl colors to match the up with team for the line graph
 nflColors <- c("Arizona Cardinals" = "#97233f", "Atlanta Falcons" = "#a71930", 
                "Baltimore Ravens" = "#241773", "Buffalo Bills" = "#00338d", 
                "Carolina Panthers" = "#0085ca", "Chicago Bears" = "#0b162a", 
@@ -78,11 +82,47 @@ shinyServer(function(input, output,session) {
   
   ### Team
   
+  confData <- reactive({
+    teamData %>%
+      filter(season %in% input$seasonsFilterTeam,
+             conference %in% input$conferenecFilterTeam)
+  })
+  
+  output$divisionFilterInput <- renderUI({
+    
+    pickerInput(
+        inputId = "divisionFilterTeam",
+        label = "Division(s)",
+        choices = sort(unique(confData()$division)),
+        selected = unique(confData()$division),
+        multiple = TRUE,
+        options = pickerOptions(actionsBox = TRUE)
+    )
+  })
+  
+  divData <- reactive({
+    confData() %>% filter(division %in% input$divisionFilterTeam)
+  })
+  
+  output$teamFilterInput <- renderUI({
+    pickerInput(
+      inputId = "teamsFilterTeam",
+      label = "Team(s)",
+      choices = unique(divData()$team),
+      selected = unique(divData()$team),
+      multiple = TRUE,
+      options = pickerOptions(actionsBox = TRUE,
+                              liveSearch = TRUE)
+    )
+  })
+  
   # data based on user inputs
   graphDataTeam <- reactive({
     teamData %>%
-      filter(team %in% input$teamsFilterTeam,
-             season %in% input$seasonsFilterTeam,
+      filter(season %in% input$seasonsFilterTeam,
+             conference %in% input$conferenecFilterTeam,
+             team %in% input$teamsFilterTeam,
+             division %in% input$divisionFilterTeam,
              week %in% input$weeksFilterTeam)
   })
   
@@ -92,7 +132,8 @@ shinyServer(function(input, output,session) {
     
     linePlot <- ggplot(data = graphDataTeam(), aes(x = date, group = team, color = team)) +
       geom_line(aes_string(y = input$lineVarTeam)) +
-      scale_color_manual(values = nflColors, aesthetics = c("color"))
+      scale_color_manual(values = nflColors, aesthetics = c("color")) +
+      labs(title = paste0("Plot of ", input$lineVarTeam))
     
     ggplotly(linePlot, tooltip = c("x", "y", "group"))
   })
@@ -103,7 +144,8 @@ shinyServer(function(input, output,session) {
 
     plot <- ggplot(data = graphDataTeam(), aes_string(x = input$xVarTeam, y = input$yVarTeam)) +
       geom_jitter(aes(color = win)) +
-      scale_color_manual(values = c("#d7181c", "#2c7bb6"))
+      scale_color_manual(values = c("#d7181c", "#2c7bb6")) + 
+      labs(title = paste0("Plot of ", input$xVarTeam, " vs. ", input$yVarTeam))
     
     ggplotly(plot)
     
@@ -165,9 +207,9 @@ shinyServer(function(input, output,session) {
 
   })
   
-  #####################
-  # Data Modeling Tab #
-  #####################
+  ######################
+  # Data Modeling Tabs #
+  ######################
   
   ##############
   # Model Info #
@@ -186,19 +228,278 @@ shinyServer(function(input, output,session) {
   # Model Fitting #
   #################
   
+  
+  # ensures that 2 weeks of data will be used for training to cover for a bye week during the period selected
+  # unless the user selects to predict for week 2 then it uses week 1 (or 1 week of training)
   output$trainWeeksInput <- renderUI({
     
     numericInput(
       inputId = "trainWeeks",
       label = "Select the number of weeks to use as training",
-      value = input$weekModel - 1,
+      value = input$predWeek - 1,
       # use 2 weeks of training to ensure that a team will have data if they select a time during a team's bye week
       # if they want to predict for week 2 then they can only use week 1 data for training
-      min = ifelse(input$weekModel == 2, 1, 2), 
-      max = input$weekModel - 1,
+      min = ifelse(input$predWeek == 2, 1, 2), 
+      max = input$predWeek - 1,
       step = 1
     )
   })
+  
+  output$maxCpInput <- renderUI({
+    
+    # default value at 10
+    value <- 10
+    
+    # check if the minimum cp input is greater than the default
+    # if it is, make the default max value the nearest integer of the minimum value + 1
+    if(input$minCp > value){
+      value <- round(input$minCp + 1, digits = 0)
+    }
+    
+    numericInput(
+      inputId = "maxCp",
+      label = "Max Cp",
+      min = input$minCp,
+      max = 1000,
+      value = value
+    )
+    
+  })
+  
+  ##### Model Training #####
+  
+  observeEvent(input$trainModels, {
+    
+    # add a progress button so the user knows the models are being fit
+    progress <- Progress$new()
+    
+    # makes sure the progress bar closes once this event is over
+    on.exit(progress$close())
+    
+    # initial message to the user
+    progress$set(message = "Fitting Models", value = 0)
+    
+    # use the seed selected by the user to replicate results
+    set.seed(input$seed)
+    
+    # filter the team data set based on universal variables selected
+    progress$inc(0.1, detail = "Filtering the dataset")
+    
+    nflData <- teamData %>% 
+      filter(season == input$seasonModel, 
+             between(week, input$predWeek - input$trainWeeks, input$predWeek))
+    
+    aggNfl <- nflData %>%
+      group_by(team) %>%
+      arrange(team, week) %>%
+      mutate(
+        defRushAtt = cummean(defRushAtt)
+        ,defRushYds = cummean(defRushYds)
+        ,defRushTD = cummean(defRushTD)
+        ,defPassComp = cummean(defPassComp)
+        ,defPassAtt = cummean(defPassAtt)
+        ,defPassYds = cummean(defPassYds)
+        ,defPassTD = cummean(defPassTD)
+        ,defPassInt = cummean(defPassInt)
+        ,defTimesSacked = cummean(defTimesSacked)
+        ,defSackYdsLost = cummean(defSackYdsLost)
+        ,defFum	 = cummean(defFum)
+        ,defFumLost = cummean(defFumLost)
+        ,def3rdPerc = cummean(def3rdPerc)
+        ,def4thPerc = cummean(def4thPerc)
+        ,defCompPerc = cummean(defCompPerc)
+        ,defRushYPC = cummean(defRushYPC)
+        ,defFirstDowns = cummean(defFirstDowns)
+        ,defNetPassYds = cummean(defNetPassYds)
+        ,defTotalYds	 = cummean(defTotalYds)
+        ,defTurnovers = cummean(defTurnovers)
+        ,offRushAtt = cummean(offRushAtt)
+        ,offRushYds = cummean(offRushYds)
+        ,offRushTD	 = cummean(offRushTD)
+        ,offPassComp = cummean(offPassComp)
+        ,offPassAtt = cummean(offPassAtt)
+        ,offPassYds = cummean(offPassYds)
+        ,offPassTD = cummean(offPassTD)
+        ,offPassInt = cummean(offPassInt)
+        ,offTimesSacked = cummean(offTimesSacked)
+        ,offSackYdsLost = cummean(offSackYdsLost)
+        ,offFum = cummean(offFum)
+        ,offFumLost = cummean(offFumLost)
+        ,offNumPen = cummean(offNumPen)
+        ,offPenYds = cummean(offPenYds)
+        ,top = cummean(top)
+        ,elo = elo
+        ,off3rdPerc = cummean(off3rdPerc)
+        ,off4thPerc = cummean(off4thPerc)
+        ,offCompPerc = cummean(offCompPerc)
+        ,offRushYPC = cummean(offRushYPC)
+        ,offFirstDowns = cummean(offFirstDowns)
+        ,offNetPassYds = cummean(offNetPassYds)
+        ,offTotalYds = cummean(offTotalYds)
+        ,offTurnovers = cummean(offTurnovers)
+        ,offTotalPlays = cummean(offTotalPlays)
+        ,offPoints = cummean(offPoints)
+        ,defPoints = cummean(defPoints)
+      ) %>%
+      arrange(season, team, week) %>%
+      select(-c(win, division, conference))
+    
+    # filter the schedule data set based on the universal variables selected 
+    scheduleData <- schedule %>%
+      filter(season == input$seasonModel,
+             between(week, input$predWeek - input$trainWeeks, input$predWeek)) %>%
+      select(-c(homeAbb, awayAbb))
+    
+    modeling <- left_join(scheduleData, aggNfl, by = c("season" = "season", "week" = "week", "date" = "date", "awayTeam" = "team"))
+    
+    colnames(modeling)[7:53] <- paste0(colnames(modeling)[7:53], "Away")
+    
+    modeling <- left_join(modeling, aggNfl, by = c("season" = "season", "week" = "week", "date" = "date", "homeTeam" = "team"))
+    
+    colnames(modeling)[54:100] <- paste0(colnames(modeling)[54:100], "Home")
+    
+    output$testTable <- renderDataTable({
+      modeling
+    })
+    
+    modelData <- modeling %>%
+      mutate(
+        defRushYdsDiff = defRushYdsHome - defRushYdsAway
+        ,defRushTDDiff = defRushTDHome - defRushTDAway
+        ,defPassCompDiff = defPassCompHome - defPassCompAway
+        ,defPassAttDiff = defPassAttHome - defPassAttAway
+        ,defPassYdsDiff = defPassYdsHome - defPassYdsAway
+        ,defPassTDDiff = defPassTDHome - defPassTDAway
+        ,defPassIntDiff = defPassIntHome - defPassIntAway
+        ,defTimesSackedDiff = defTimesSackedHome - defTimesSackedAway
+        ,defSackYdsLostDiff = defSackYdsLostHome - defSackYdsLostAway
+        ,defFumLostDiff = defFumLostHome - defFumLostAway
+        ,defthirdPercDiff = def3rdPercHome - def3rdPercAway
+        ,deffourthPercDiff = def4thPercHome - def4thPercAway
+        ,defCompPercDiff = defCompPercHome - defCompPercAway
+        ,defRushYPCDiff = defRushYPCHome - defRushYPCAway
+        ,defFirstDownsDiff = defFirstDownsHome - defFirstDownsAway
+        ,defNetPassYdsDiff = defNetPassYdsHome - defNetPassYdsAway
+        ,defTurnoversDiff = defTurnoversHome - defTurnoversAway
+        ,offRushAttDiff = offRushAttHome - offRushAttAway
+        ,offRushYdsDiff = offRushYdsHome - offRushYdsAway
+        ,offPassCompDiff = offPassCompHome - offPassCompAway
+        ,offPassAttDiff = offPassAttHome - offPassAttAway
+        ,offPassYdsDiff = offPassYdsHome - offPassYdsAway
+        ,offPassTDDiff = offPassTDHome - offPassTDAway
+        ,offPassIntDiff = offPassIntHome - offPassIntAway
+        ,offTimesSackedDiff = offTimesSackedHome - offTimesSackedAway
+        ,offSackYdsLostDiff = offSackYdsLostHome - offSackYdsLostAway
+        ,offFumDiff = offFumHome - offFumAway
+        ,offFumLostDiff = offFumLostHome - offFumLostAway
+        ,offNumPenDiff = offNumPenHome - offNumPenAway
+        ,offPenYdsDiff = offPenYdsHome - offPenYdsAway
+        ,topDiff = topHome - topAway
+        ,eloDiff = eloHome - eloAway
+        ,offthirdPercDiff = off3rdPercHome - off3rdPercAway
+        ,offfourthPercDiff = off4thPercHome - off4thPercAway
+        ,offCompPercDiff = offCompPercHome - offCompPercAway
+        ,offRushYPCDiff = offRushYPCHome - offRushYPCAway
+        ,offFirstDownsDiff = offFirstDownsHome - offFirstDownsAway
+        ,offNetPassYdsDiff = offNetPassYdsHome - offNetPassYdsAway
+        ,offTotalYdsDiff = offTotalYdsHome - offTotalYdsAway
+        ,offTurnoversDiff = offTurnoversHome - offTurnoversAway
+        ,offTotalPlaysDiff = offTotalPlaysHome - offTotalPlaysAway
+        ,offPointsDiff = offPointsHome - offPointsAway
+        ,defPointsDiff = defPointsHome - defPointsAway
+        ,homeWin = as.factor(homeWin)
+      ) %>%
+      select(-c(ends_with("Home"), ends_with("Away")))
+    
+
+    testData <- modelData %>% filter(week == input$predWeek)
+    trainData <- modelData %>% filter(week != input$predWeek)
+    
+    ### Logistic Model ###
+    
+    # train the logistic model
+    progress$inc(0.3, detail = "Fitting Logistic Regression")
+
+    logModel <- train(homeWin ~ .,
+                      data = trainData[, c(c("homeWin"), input$logVars)],
+                      method = "glm",
+                      family = "binomial",
+                      metric = "Accuracy"
+                       )
+
+    # train the rf model
+    progress$inc(0.5, detail = "Fitting Random Forest")
+
+    mtryVals <- as.numeric(input$mtryValues)
+
+    rfModel <- train(homeWin ~ .,
+                     data = trainData[, c(c("homeWin"), input$rfVars)],
+                     method = "rf",
+                     metric = "Accuracy",
+                     tuneGrid = expand.grid(mtry = mtryVals))
+
+
+    # train the tree model
+    progress$inc(0.7, detail = "Fitting Classification Tree")
+
+    cpVals <- seq(input$minCp, input$maxCp, length.out = input$numCp)
+
+    treeModel <- train(homeWin ~ .,
+                       data = trainData[, c(c("homeWin"), input$treeVars)],
+                       method = "rpart",
+                       metric = "Accuracy",
+                       tuneGrid = expand.grid(cp = cpVals))
+
+    # test the models on the test set
+    progress$inc(0.9, detail = "Evaluating the test set performacne")
+
+    logPred <- predict(logModel, testData, type = "raw")
+    rfPred <- predict(rfModel, testData, type = "raw")
+    treePred <- predict(treeModel, testData, type = "raw")
+
+    accuracies <- c(mean(logPred == testData$homeWin),
+                    mean(rfPred == testData$homeWin),
+                    mean(treePred == testData$homeWin))
+
+    accPerc <- t(as.matrix(accuracies)) * 100
+
+    colnames(accPerc) <- c("Logistic Regression", # logistic regression
+                           paste0("Tree with Cp = ", treeModel$bestTune$cp), # tree with best tuning parameter from selected
+                           paste0("Random Forest with mtry = ", rfModel$bestTune$mtry)
+                           )
+
+    results <- as.data.frame(accPerc) %>%
+      mutate_all(round, digits = 2) %>%
+      mutate_all(paste0, sep = "%")
+    
+    # accuracy results for the 3 models
+    output$accuracyResults <- renderDataTable({
+      datatable(results)
+    })
+    
+    # Logistic Regression Summary of coefficients
+    output$logSummary <- renderDataTable({
+      round(as.data.frame(summary(logModel)$coef), 3)
+    })
+    
+    # Important variables for the random forest model
+    output$rfSummary <- renderPlot({
+      ggplot(varImp(rfModel, type = 2)) +
+        geom_col(fill = "purple") + 
+        labs(title = "Most Important Variables for the Random Forest Model")
+    })
+    
+    # A diagram of the tree
+    output$treeSummary <- renderPlot({
+      fancyRpartPlot(treeModel$finalModel)
+    })
+    
+    # save the results of the model fitting to the fitted models folder to be used in the predictions
+    saveRDS(logModel, "./Fitted Models/logModel.rds")
+    saveRDS(rfModel, "./Fitted Models/rfModel.rds")
+    saveRDS(treeModel, "./Fitted Models/treeModel.rds")
+
+  }) # end of the model fitting event
 
 })
 

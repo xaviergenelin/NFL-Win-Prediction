@@ -1,26 +1,4 @@
 
-
-```{r}
-lineData <- teamData %>%
-  filter(season == 2009, team == "Minnesota Vikings" | team == "New England Patriots")
-
-lineData$date <- as.Date(lineData$date)
-
-line1 <- ggplot(data = lineData, aes(x = date, y = defRushAtt, group = team, color = team)) + 
-  geom_line()
-
-ggplotly(line1, tooltip = c("x", "y", "group"))
-```
-
-```{r}
-library(teamcolors)
-
-cols <- show_sport_col("football")
-
-colors <- cols$data
-colnames(teamData)
-```
-
 ```{r}
 teamData <- read_csv("data/teamData.csv")
 
@@ -154,7 +132,16 @@ modelData <- modeling %>%
 
 testData <- modelData %>% filter(week == 9)
 trainData <- modelData %>% filter(week != 9)
+
+
 ```
+
+```{r}
+colnames(trainData)
+
+modelVars <- c("defRushYdsDiff", "defRushTDDiff", "defPassCompDiff", "defPassAttDiff", "defPassYdsDiff", "defPassTDDiff","defPassIntDiff", "defTimesSackedDiff", "defSackYdsLostDiff", "defFumLostDiff", "defthirdPercDiff","deffourthPercDiff", "defCompPercDiff", "defRushYPCDiff", "defFirstDownsDiff", "defNetPassYdsDiff","defTurnoversDiff", "offRushAttDiff", "offRushYdsDiff", "offPassCompDiff", "offPassAttDiff","offPassYdsDiff", "offPassTDDiff", "offPassIntDiff", "offTimesSackedDiff", "offSackYdsLostDiff", "offFumDiff","offFumLostDiff", "offNumPenDiff", "offPenYdsDiff", "topDiff", "eloDiff", "offthirdPercDiff", "offfourthPercDiff" , "offCompPercDiff", "offRushYPCDiff", "offFirstDownsDiff", "offNetPassYdsDiff", "offTotalYdsDiff", "offTurnoversDiff","offTotalPlaysDiff", "offPointsDiff", "defPointsDiff")
+```
+
 
 ```{r}
 library(caret)
@@ -165,7 +152,7 @@ logModel <- train(data = trainData, homeWin ~ offRushYdsDiff + offPassYdsDiff + 
 
 logModel$results
 
-logPred <- predict(logModel, newdata = testData)
+logPred <- predict(logModel, newdata = testData, type = "raw")
 
 mean(testData$homeWin == logPred)
 ```
