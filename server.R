@@ -409,7 +409,7 @@ shinyServer(function(input, output,session) {
       select(-c(ends_with("Home"), ends_with("Away")))
     
     # save values from selected range to be used in the model prediction section
-    write_csv(modeling, "./Fitted Models/modelData.csv")
+    write_csv(modelData, "./Fitted Models/modelData.csv")
     
     # create the training and testing data based on the week the user wants to predict for 
     testData <- modelData %>% filter(week == input$predWeek)
@@ -456,18 +456,22 @@ shinyServer(function(input, output,session) {
     logPred <- predict(logModel, testData, type = "raw")
     rfPred <- predict(rfModel, testData, type = "raw")
     treePred <- predict(treeModel, testData, type = "raw")
-
+    
+    # get the accuracies for each model
     accuracies <- c(mean(logPred == testData$homeWin),
                     mean(rfPred == testData$homeWin),
                     mean(treePred == testData$homeWin))
-
+    
+    # put the accuracies into a matrix and make them into a percentage
     accPerc <- t(as.matrix(accuracies)) * 100
-
+    
+    # name the columns of the matrix to match the accuracy
     colnames(accPerc) <- c("Logistic Regression", # logistic regression
                            paste0("Random Forest with mtry = ", rfModel$bestTune$mtry),
                            paste0("Tree with Cp = ", treeModel$bestTune$cp) # tree with best tuning parameter from selected
                            )
-
+    
+    # round the percentages to make them easier to read and add a percentage sign
     results <- as.data.frame(accPerc) %>%
       mutate_all(round, digits = 2) %>%
       mutate_all(paste0, sep = "%")
@@ -479,11 +483,14 @@ shinyServer(function(input, output,session) {
     
     # Logistic Regression Summary of coefficients
     output$logSummary <- renderDataTable({
+      # round the results to 3 decimal places to make it easier to read
       round(as.data.frame(summary(logModel)$coef), 3)
     })
     
     # Important variables for the random forest model
     output$rfSummary <- renderPlot({
+      # create a plot of the most important variables
+      ## idea: have a button that lets the user to select their favorite team and use that color?
       ggplot(varImp(rfModel, type = 2)) +
         geom_col(fill = "purple") + 
         labs(title = "Most Important Variables for the Random Forest Model")
@@ -509,13 +516,16 @@ shinyServer(function(input, output,session) {
   
   # logistic regression variables
   output$logPredVariables <- renderUI({
+  
+    # get the data used in the model fitting to get average values of the variables selected
+    modelData <- read_csv("./Fitted Models/modelData.csv", show_col_types = FALSE)
     
     tags$ul(tagList(
       lapply(input$logVars, function(var){
         numericInput(
           inputId = paste0(var, "Value"),
           label = paste0("Select ", var, " Value"),
-          value = 0,
+          value = round(median(pull(modelData[, var]), na.rm=TRUE), 2),
           step = 0.1
         )
       })
@@ -525,12 +535,15 @@ shinyServer(function(input, output,session) {
   # random forest model variables
   output$rfPredVariables <- renderUI({
     
+    # get the data used in the model fitting to get average values of the variables selected
+    modelData <- read_csv("./Fitted Models/modelData.csv", show_col_types = FALSE)
+    
     tags$ul(tagList(
       lapply(input$rfVars, function(var){
         numericInput(
           inputId = paste0(var, "Value"),
           label = paste0("Select ", var, " Value"),
-          value = 0,
+          value = round(median(pull(modelData[, var]), na.rm=TRUE), 2),
           step = 0.1
         )
       })
@@ -539,12 +552,16 @@ shinyServer(function(input, output,session) {
   
   # classification tree variables
   output$treePredVariables <- renderUI({
+    
+    # get the data used in the model fitting to get average values of the variables selected
+    modelData <- read_csv("./Fitted Models/modelData.csv", show_col_types = FALSE)
+    
     tags$ul(tagList(
       lapply(input$treeVars, function(var){
         numericInput(
           inputId = paste0(var, "Value"),
           label = paste0("Select ", var, " Value"),
-          value = 1,
+          value = round(median(pull(modelData[, var]), na.rm=TRUE), 2),
           step = 0.1
         )
       })
