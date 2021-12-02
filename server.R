@@ -10,6 +10,7 @@ library(DT)
 library(shinyWidgets)
 library(plotly)
 library(rattle)
+library(shinythemes)
 
 # load in the team data
 teamData <- read_csv("data/teamData.csv", show_col_types = FALSE)
@@ -492,7 +493,7 @@ shinyServer(function(input, output,session) {
       # create a plot of the most important variables
       ## idea: have a button that lets the user to select their favorite team and use that color?
       ggplot(varImp(rfModel, type = 2)) +
-        geom_col(fill = "purple") + 
+        geom_col(fill = "#4f2683") + 
         labs(title = "Most Important Variables for the Random Forest Model")
     })
     

@@ -6,8 +6,10 @@ Load in the dataset. Create the abbreviations for the teams based on the 538 abb
 ```{r}
 library(tidyverse)
 
-gameData <- read_csv("data/scoresFull.csv")
+# the original dataset
+gameData <- read_csv("data/scoresFull.csv", show_col_types = FALSE)
 
+# add in abbreviations for each team to match what comes from the 538 API 
 homeAbb <- sapply(gameData$homeTeam, switch, 
                   "Arizona Cardinals" = "ari", 
                   "Atlanta Falcons" = "atl",
@@ -76,10 +78,11 @@ awayAbb <- sapply(gameData$awayTeam, switch,
                   "Tennessee Titans" = "ten",
                   "Washington Redskins" = "wsh")
 
+# add abbreviations to the dataset
 gameData$homeAbb <- homeAbb
 gameData$awayAbb <- awayAbb
 
-
+# calculate whether the home team wins or not
 gameData <- gameData %>% 
   mutate(homeWin = ifelse(HFinal - AFinal > 0, 1, 0)) %>%
   select(!c("date", "day"))
@@ -108,6 +111,7 @@ for(i in 1:length(json_data$resources$datahub$type)){
 }
 
 # team1 = home, team2 = away
+# rename columns to easily match what is in the scoresFull data
 eloData <- eloData %>% 
   filter(season %in% (2002:2014)) %>% 
   select(season, team1, team2, elo1_pre, elo2_pre, score1, score2, date) %>%
@@ -131,6 +135,7 @@ gameData <- gameData %>%
                        ifelse(week == "Division", 19,
                               ifelse(week == "ConfChamp", 20,
                                      ifelse(week == "SuperBowl", 21, week)))),
+         # make these numeric to prevent any potential future issues
          awayTOP = as.numeric(awayTOP),
          homeTOP = as.numeric(homeTOP),
          week = as.numeric(week))
@@ -189,6 +194,7 @@ visData <- gameData %>%
          team1 = homeTeam,
          team2 = awayTeam
          ) %>%
+  # keep only the new columns that we created for our dataset
   select(-c(starts_with("H"), starts_with("home"), starts_with("A"), starts_with("home"))) %>%
   rename(homeTeam = team1, awayTeam = team2)
 
@@ -197,10 +203,10 @@ write_csv(visData, "data/visualGameData.csv")
 
 # Team Data
 
-Gets offensive and defensive data for each team in each game they play. Will be used in some of the data visualization to give the user a team level versus a game level
+Gets offensive and defensive data for each team in each game they play. Will be used to easily get data on each team to aggregate through a period of time for the modeling.
 
 ```{r}
-# add in the 3rd and 4th down percentages, offensive and defensive pass comp % and rush yards per carry 
+# add in the 3rd and 4th down percentages, pass comp % and rush yards per carry for both the offense and defense
 gameData <- gameData %>%
   mutate(home3rdPerc = ifelse(home3rdAtt == 0, 0, home3rdConv/home3rdAtt),
          home4thPerc = ifelse(home4thAtt == 0, 0, home4thConv/home4thAtt),
@@ -211,6 +217,7 @@ gameData <- gameData %>%
          homeRushYPC = homeRushAtt / homeRushYds,
          awayRushYPC = awayRushAtt / awayRushYds)
 
+# change the home variables to the offense and away to defense
 home <- gameData %>%
   select("season", "week", "date", "homeTeam", homeWin, starts_with("home"), starts_with("H"), starts_with("away"), starts_with("A"), -c(awayTeam, awayAbb, awayElo, awayTOP, awayPenYds, awayNumPen, ATotalPlays, homeAbb, home3rdAtt, home3rdConv, home4thAtt, home4thConv, away3rdAtt, away3rdConv, away4thAtt, away4thConv)) %>%
   rename("team" = "homeTeam") %>%
@@ -222,6 +229,7 @@ home <- gameData %>%
   rename_at(vars(starts_with("A")), funs(paste0("def", substring(., 2)))) %>%
   rename(elo = "offElo", top = "offTOP")
 
+# change the away variables to the offense and home to defense
 away <- gameData %>%
   select("season", "week", "date", "awayTeam", homeWin, starts_with("home"), starts_with("H"), starts_with("away"), starts_with("A"), -c(homeTeam, homeAbb, homeElo, homeTOP, homePenYds, homeNumPen, HTotalPlays, awayAbb, home3rdAtt, home3rdConv, home4thAtt, home4thConv, away3rdAtt, away3rdConv, away4thAtt, away4thConv)) %>%
   rename("team" = "awayTeam") %>%

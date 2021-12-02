@@ -10,6 +10,7 @@ library(DT)
 library(shinyWidgets)
 library(plotly)
 library(rattle)
+library(shinythemes)
 
 # link to the dataset
 originalDataLink <- "https://www4.stat.ncsu.edu/~online/datasets/"
@@ -40,6 +41,8 @@ modelVars <- c("defRushYdsDiff", "defRushTDDiff", "defPassCompDiff", "defPassAtt
 # Define UI for application that draws a histogram
 shinyUI(navbarPage(
   title = "NFL",
+  
+  theme = shinytheme("cosmo"),
   
   # create tabs for the sections
   tabsetPanel(
@@ -428,61 +431,83 @@ shinyUI(navbarPage(
             
             br(),
             
-            h3("Goals of the models"),
+            h2("Goals of the models"),
             
             "The goal of the model section is to determine who will win an NFL game. This is done by classification to see if the home 
-            team wins or loses (away team wins). There will be 3 different types of models that will 
+            team wins or loses (away team wins). For simplicity, ties aren't considered for this data set to keep it as a binary outcome.
+            There will be 3 different types of models that will 
             be used to classify a winner for a game: logistic regression, random forests, and a classification tree",
             
+            br(), 
             br(),
             
             "These models will be predicting for a single week in an NFL season. The user will select a single week to predict the 
-            winners for, along with the number of weeks that will be used to train the models for classification.",
-            
-            br(),
-            
-            h2("Initial Thoughts about the models"),
-            
-            "Putting my initial thoughts about what is going to happen with the modeling.
-          The user is going to be predicting for a single week in a season. They'll first choose the season they want,
-          then the week, and finally the number of weeks they want to use as their 'training' set 
-          (basically number of weeks before that week). This will filter the data into a training and test set in the server file.
-          Once that's all set, the user will choose the variables they want in each of the models to predict that week's results. 
-          The values in the training set will need to be aggregated throughout the weeks",
+            winners for, along with the number of weeks that will be used to train the models for classification. The training data
+            will be aggregated throughout to get a better understanding of how a team is playing during that stretch. These aggreagations
+            will be the cummulative average for both the home and away teams. The only statistic that isn't averaged is the Elo value taken
+            from 538, which already takes into account how a team has been performing.",
             
             br(),
             br(),
+
+            "For the modeling, these average stats and the Elo value will be compared between the two teams in the game. Each comparison will be a difference
+            between the home team's stat and the away team's stat.",
             
-            "A few other notes quick. When selecting the weeks for the training and test sets, they should have at least 1 week in
-          the training. So they need to select at least week 2 for prediction and 1 week of training within that season. They can
-          select 21 (i.e. the super bowl) and use the whole season, but can't use a number higher than the predicted week. So it
-          will need to be a maximum of the input if possible. 
-          These weeks before the prediction will need to be aggregated throughout to update how well the team is doing. 
-          The first week  in the time range they select is basically the starting point of what they're interested in. 
-          So we don't care about anything that happened before it. The Elo rating (if they choose to use it) will be the 
-          only thing that takes anything outside this window into account.",
+            h3("Logistic Regression"),
             
-            h4("Logistic Regression"),
-            
-            "Talk about the benefits and drawback of the approach. And some math stuff explaining it.",
+            "A logistic regression is a model that is used for binary classification. A binary case is when there
+            are only two different classes. The logistic model will calculate the probability, or log odds, of an 
+            event occuring or not. If this probability of the event is more likely to occur, probability of 0.5 or more,
+            then we classify this as the event occuring. If it's below 0.5, then we classify it as the event not occuring.
+            The logistic model will be modeled with the following formula:",
             
             br(),
-            
-            "Equation:",
             uiOutput("logRegEq"),
             
             br(),
+            
+            "One of the advantages of this approach is the simplicity and interpretability of it. Because this is one of the more
+            simple models, it is easy to implement it for classification. One of the drawbacks to this is that if you have more
+            features, or variables, than you do observations in the dataset, your model will overfit the data.",
+            
             br(),
             
-            h4("Random Forests"),
+            h3("Classification Trees"),
             
-            "Talk about the benefits and drawback of the approach. And some math stuff explaining it.",
+            "A tree can be used in both classification and regression. For both instances, the algorithm recursively splits the variables
+            into different regions that best describe the data. The data continuely gets split into groups until we reach a point where we 
+            can't break this down any further, or when breaking this down wouldn't lead to any additional information gained. The splits 
+            are made to reduce the training error as much as possible at that split. We then get 
+            an output at the end of all the branches, which are called terminal nodes. Because we're interested in binary classification, 
+            the output will be one of two classes. The different groups are the branches of the tree and if you draw this out from the 
+            initial data set, you get an image that looks like a tree. If the groups cannot be broken out distinctly,
+            then we can take the majority of observations that are in that terminal node. ",
             
             br(),
             
-            h4("Classification Trees"),
+            "One of the advantages to this method is that the data doesn't have to be normalzied or scaled like with other methods. Some other
+            methods can be thrown off when variables are on different scales than each other and their results can be misleading. A decision tree
+            is also another intuitive method and is easy for someone to be able to comprehend how the results are obtained. One of the big disadvantages
+            to this method is that any change in the data can vastly change the structure of the model, regardless of how large or small that change is.
+            Depending on the amount of variables, this can also take longer to calculate since it needs to go through all of the variables to determine the 
+            best splits for each branch.",
             
-            "Talk about the benefits and drawback of the approach. And some math stuff explaining it."
+            h3("Random Forests"),
+            
+            "Random forests expand on the idea of decision trees. It consists of a large number of individual decision trees that operate like an ensemble,
+            or a forest. Each of the individual trees split out as described earlier and the most popular vote within that individual tree is that model's 
+            output/prediction. This plays off of the idea of \"power in numbers\". These individual trees create a sample of our training data and each are 
+            restricted to a subset of our variables. Otherwise, they would all get come to the same conclusion. For classification, this majority vote is use
+            as the predicted class and for a regression, the predictions of all the trees get averaged",
+            
+            br(),
+            br(),
+            
+            "One of the drawbacks to this is that it is not as interpretable as the other two methods. A single tree is easily understandable, and even a small 
+            forest of only 5 or so trees could be interpreted, but the number of trees is typically much larger. Due to the large amount of trees being evaluated 
+            this also increases the amount of time it takes to train a model. One of the big positives is that because they use subsets of the data, this reduces 
+            the overall error and improves the accuracy of our prediction. This also automatically takes care of missing values and outliers for us. By using many 
+            individual trees, this is not as sensitive to new data like individual trees are and collectively the trees are less impaced by noise.",
             
           )),
           
@@ -542,33 +567,6 @@ shinyUI(navbarPage(
                                       liveSearch = TRUE)
             ),
             
-            h3("Random Forest"),
-            
-            # random forest variables
-            pickerInput(
-              inputId = "rfVars",
-              label = "Random Forest model variables",
-              choices = sort(modelVars),
-              selected = c("defRushYdsDiff", "defPassYdsDiff", "eloDiff", 
-                           "defTurnoversDiff", "offPointsDiff", "defPointsDiff", 
-                           "offTurnoversDiff", "defTimesSackedDiff", "offPenYdsDiff", 
-                           "offRushYPCDiff", "defRushYPCDiff", "topDiff",
-                           "offRushYdsDiff", "offPassYdsDiff"),
-              multiple = TRUE,
-              options = pickerOptions(actionsBox = TRUE,
-                                      liveSearch = TRUE)
-            ),
-            
-            # allows for multiple values to be selected for mtry value
-            selectizeInput(
-              inputId = "mtryValues",
-              label = "Select up to 5 mtry values",
-              choices = 1:length(modelVars),
-              multiple = TRUE,
-              selected = c(3, 5, 10),
-              options = list(maxItems = 5)
-            ),
-            
             h3("Classification Tree"),
             
             # classifcation tree variables
@@ -617,7 +615,34 @@ shinyUI(navbarPage(
               # puts the inputs side by side to save space
               style = "display:inline-block"
             ),
-
+            
+            
+            h3("Random Forest"),
+            
+            # random forest variables
+            pickerInput(
+              inputId = "rfVars",
+              label = "Random Forest model variables",
+              choices = sort(modelVars),
+              selected = c("defRushYdsDiff", "defPassYdsDiff", "eloDiff", 
+                           "defTurnoversDiff", "offPointsDiff", "defPointsDiff", 
+                           "offTurnoversDiff", "defTimesSackedDiff", "offPenYdsDiff", 
+                           "offRushYPCDiff", "defRushYPCDiff", "topDiff",
+                           "offRushYdsDiff", "offPassYdsDiff"),
+              multiple = TRUE,
+              options = pickerOptions(actionsBox = TRUE,
+                                      liveSearch = TRUE)
+            ),
+            
+            # allows for multiple values to be selected for mtry value
+            selectizeInput(
+              inputId = "mtryValues",
+              label = "Select up to 5 mtry values",
+              choices = 1:length(modelVars),
+              multiple = TRUE,
+              selected = c(3, 5, 10),
+              options = list(maxItems = 5)
+            ),
             
             br(),
             
@@ -637,14 +662,13 @@ shinyUI(navbarPage(
             h3("Logistic Summary"),
             dataTableOutput("logSummary"),
             
-            # Most important variables for the random forest model
-            h3("Random Forest Summary"),
-            plotOutput("rfSummary"),
-            
             # Diagram of the best tree model
             h3("Tree Summary"),
-            plotOutput("treeSummary")
+            plotOutput("treeSummary"),
             
+            # Most important variables for the random forest model
+            h3("Random Forest Summary"),
+            plotOutput("rfSummary")
           )
 
         ),
@@ -660,10 +684,10 @@ shinyUI(navbarPage(
               label = "Choose a Model to Predict",
               choiceNames = c(
                 "Logistic Regression",
-                "Random Forest",
-                "Classification Tree"
+                "Classification Tree",
+                "Random Forest"
               ),
-              choiceValues = c("logReg", "randFor", "classTree"),
+              choiceValues = c("logReg", "classTree", "randFor"),
               selected = "logReg",
               inline = TRUE
             ),
@@ -684,14 +708,15 @@ shinyUI(navbarPage(
             ),
             
             conditionalPanel(
-              condition = "input.modelType == 'randFor'",
-              uiOutput("rfPredVariables")
+              condition = "input.modelType == 'classTree'",
+              uiOutput("treePredVariables")
             ),
             
             conditionalPanel(
-              condition = "input.modelType == 'classTree'",
-              uiOutput("treePredVariables")
+              condition = "input.modelType == 'randFor'",
+              uiOutput("rfPredVariables")
             )
+
           ),
           
           mainPanel(
