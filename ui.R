@@ -288,8 +288,8 @@ shinyUI(navbarPage(
                 inputId = "numVarsTeam",
                 label = "Select the variable(s) to summarize",
                 # excludes week, season, team, win columns
-                choices = colnames(teamData)[5:52],
-                selected = colnames(teamData)[5:52],
+                choices = colnames(teamData)[5:51],
+                selected = colnames(teamData)[5:51],
                 multiple = TRUE,
                 options = pickerOptions(actionsBox = TRUE,
                                         liveSearch = TRUE)
@@ -412,7 +412,7 @@ shinyUI(navbarPage(
             
             conditionalPanel(
               condition = "input.summaryTypeTeam == 'teamSum'",
-              dataTableOutput("teamSummary")
+              DTOutput("teamSummary")
             )
           ),
           

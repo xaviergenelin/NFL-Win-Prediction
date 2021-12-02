@@ -172,8 +172,11 @@ shinyServer(function(input, output,session) {
   # the team summary table
   output$teamSummary <- renderDT({
     
-    # filter the 
-    teamSumData <- teamData %>%
+    newData <- read_csv("data/teamData.csv", show_col_types = FALSE)
+    
+    ############!!!!!!!!!!!!!!!!!!!!!!!!!!!#################### 
+    # something gets messed up here if I use teamData instead of newData
+    teamSumData <- newData %>%
       filter(team %in% input$teamsFilterTeam,
              season %in% input$seasonsFilterTeam,
              week %in% input$weeksFilterTeam) %>%
@@ -205,8 +208,9 @@ shinyServer(function(input, output,session) {
     
     results <- results[, c("season", "team", "Wins", "Games Played", "Total Points", "Off PPG", 
                            "Off PPG Rank", "Total Points Against", "Def PPG", "Def PPG Rank")]
-
+    
   })
+
   
   ######################
   # Data Modeling Tabs #
