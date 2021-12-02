@@ -83,34 +83,31 @@ shinyServer(function(input, output,session) {
   
   ### Team
   
-  confData <- reactive({
-    teamData %>%
-      filter(season %in% input$seasonsFilterTeam,
-             conference %in% input$conferenecFilterTeam)
-  })
-  
   output$divisionFilterInput <- renderUI({
     
+    confData <- teamData %>%
+      filter(conference %in% input$conferenceFilterExp)
+    
     pickerInput(
-        inputId = "divisionFilterTeam",
+        inputId = "divisionFilterExp",
         label = "Division(s)",
-        choices = sort(unique(confData()$division)),
-        selected = unique(confData()$division),
+        choices = sort(unique(confData$division)),
+        selected = unique(confData$division),
         multiple = TRUE,
         options = pickerOptions(actionsBox = TRUE)
     )
   })
   
-  divData <- reactive({
-    confData() %>% filter(division %in% input$divisionFilterTeam)
-  })
-  
   output$teamFilterInput <- renderUI({
+    
+    divData <- teamData %>%
+      filter(division %in% input$divisionFilterExp)
+    
     pickerInput(
-      inputId = "teamsFilterTeam",
+      inputId = "teamsFilterExp",
       label = "Team(s)",
-      choices = unique(divData()$team),
-      selected = unique(divData()$team),
+      choices = unique(divData$team),
+      selected = unique(divData$team),
       multiple = TRUE,
       options = pickerOptions(actionsBox = TRUE,
                               liveSearch = TRUE)
@@ -120,33 +117,33 @@ shinyServer(function(input, output,session) {
   # data based on user inputs
   graphDataTeam <- reactive({
     teamData %>%
-      filter(season %in% input$seasonsFilterTeam,
-             conference %in% input$conferenecFilterTeam,
-             team %in% input$teamsFilterTeam,
-             division %in% input$divisionFilterTeam,
-             week %in% input$weeksFilterTeam)
+      filter(season %in% input$seasonsFilterExp,
+             conference %in% input$conferenceFilterExp,
+             team %in% input$teamsFilterExp,
+             division %in% input$divisionFilterExp,
+             week %in% input$weeksFilterExp)
   })
   
   
   # line graph
-  output$lineGraphTeam <- renderPlotly({
+  output$lineGraph <- renderPlotly({
     
     linePlot <- ggplot(data = graphDataTeam(), aes(x = date, group = team, color = team)) +
-      geom_line(aes_string(y = input$lineVarTeam)) +
+      geom_line(aes_string(y = input$lineVar)) +
       scale_color_manual(values = nflColors, aesthetics = c("color")) +
-      labs(title = paste0("Plot of ", input$lineVarTeam))
+      labs(title = paste0("Plot of ", input$lineVar))
     
     ggplotly(linePlot, tooltip = c("x", "y", "group"))
   })
 
   
   # scatter plot of team data
-  output$scatterPlotTeam <- renderPlotly({
+  output$scatterPlot <- renderPlotly({
 
-    plot <- ggplot(data = graphDataTeam(), aes_string(x = input$xVarTeam, y = input$yVarTeam)) +
+    plot <- ggplot(data = graphDataTeam(), aes_string(x = input$xVar, y = input$yVar)) +
       geom_jitter(aes(color = win)) +
       scale_color_manual(values = c("#d7181c", "#2c7bb6")) + 
-      labs(title = paste0("Plot of ", input$xVarTeam, " vs. ", input$yVarTeam))
+      labs(title = paste0("Plot of ", input$xVar, " vs. ", input$yVar))
     
     ggplotly(plot)
     
@@ -154,15 +151,15 @@ shinyServer(function(input, output,session) {
   
   
   # the numerical summary for different variables
-  output$numericSummaryTeam <- renderDT({
+  output$numericSummary <- renderDT({
     
     # filter the data based on the universal filters and remove the week, season, and team columns
     filteredData <- teamData %>%
-      filter(team %in% input$teamsFilterTeam,
-             season %in% input$seasonsFilterTeam,
-             week %in% input$weeksFilterTeam) %>%
+      filter(team %in% input$teamsFilterExp,
+             season %in% input$seasonsFilterExp,
+             week %in% input$weeksFilterExp) %>%
       select(-c(week, season, team)) %>%
-      select(input$numVarsTeam)
+      select(input$numVars)
     
     numericSum <- do.call(cbind, lapply(filteredData, summary))
     
@@ -177,9 +174,9 @@ shinyServer(function(input, output,session) {
     ############!!!!!!!!!!!!!!!!!!!!!!!!!!!#################### 
     # something gets messed up here if I use teamData instead of newData
     teamSumData <- newData %>%
-      filter(team %in% input$teamsFilterTeam,
-             season %in% input$seasonsFilterTeam,
-             week %in% input$weeksFilterTeam) %>%
+      filter(team %in% input$teamsFilterExp,
+             season %in% input$seasonsFilterExp,
+             week %in% input$weeksFilterExp) %>%
       select(-c(date,  division, conference, defRushAtt, defPassComp, defPassAtt, defSackYdsLost, 
                 defNetPassYds, offRushAtt, offPassAtt, offSackYdsLost, offNetPassYds, elo, top, 
                 def3rdPerc, def4thPerc, off3rdPerc, off4thPerc, offPenYds))

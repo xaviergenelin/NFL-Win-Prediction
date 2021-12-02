@@ -164,27 +164,15 @@ shinyUI(navbarPage(
         title = "Data Exploration",
         
         # data exploration side bar
-        sidebarPanel(
-          
-          radioButtons(
-            inputId = "dataset",
-            label = "Choose a data set",
-            choiceNames = c("Team Data", "Game Data"),
-            choiceValues = c("teamDat", "gameDat"),
-            selected = "teamDat",
-            inline = TRUE
-            
-          ),
-          
+
           ### Team Data options
-          conditionalPanel(
-            condition = "input.dataset == 'teamDat'",
+          sidebarPanel(
             
             ### Variables for all graphs/summaries
             h3("Universal Variables"),
             
             pickerInput(
-              inputId = "seasonsFilterTeam",
+              inputId = "seasonsFilterExp",
               label = "Season(s)",
               choices = sort(unique(teamData$season)),
               selected = sort(unique(teamData$season)),
@@ -193,7 +181,7 @@ shinyUI(navbarPage(
             ),
             
             pickerInput(
-              inputId = "conferenecFilterTeam",
+              inputId = "conferenceFilterExp",
               label = "Conference(s)",
               choices = sort(unique(teamData$conference)),
               selected = unique(teamData$conference),
@@ -204,7 +192,7 @@ shinyUI(navbarPage(
             uiOutput("divisionFilterInput"),
             
             pickerInput(
-              inputId = "weeksFilterTeam",
+              inputId = "weeksFilterExp",
               label = "Week(s)",
               choices = sort(unique(teamData$week)),
               selected = unique(teamData$week),
@@ -220,23 +208,22 @@ shinyUI(navbarPage(
             
             ### type of graphical summaries
             radioButtons(
-              inputId = "plotTypeTeam",
+              inputId = "plotType",
               label = "Plot Type",
-              # histogram and scatter plot for now. Not sure what they'll be
-              choiceValues = c("lineGraphTeam", "scatterPlotTeam"),
+              choiceValues = c("lineGraph", "scatterPlot"),
               choiceNames = c("Line Graph", "Scatter Plot"),
-              selected = "lineGraphTeam",
+              selected = "lineGraph",
               inline = TRUE
             ),
             
             # histogram/first plot options
             conditionalPanel(
               # condition for the plot type
-              condition = "input.plotTypeTeam == 'lineGraphTeam'",
+              condition = "input.plotType == 'lineGraph'",
               
               # some option for whatever this plot is going to be
               selectInput(
-                inputId = "lineVarTeam",
+                inputId = "lineVar",
                 label = "Select the stat",
                 choices = colnames(teamData)[5:52],
                 selected = "offPassYds",
@@ -247,11 +234,11 @@ shinyUI(navbarPage(
             # scatter plot options
             conditionalPanel(
               # condition for the plot type
-              condition = "input.plotTypeTeam == 'scatterPlotTeam'",
+              condition = "input.plotType == 'scatterPlot'",
               
               # select the x variable for the scatter plot
               selectInput(
-                inputId = "xVarTeam",
+                inputId = "xVar",
                 label = "Select an X variable",
                 choices = colnames(teamData)[5:52],
                 selected = "offTotalYds"
@@ -259,7 +246,7 @@ shinyUI(navbarPage(
               
               # select the y variable for the scatter plot
               selectInput(
-                inputId = "yVarTeam",
+                inputId = "yVar",
                 label = "Select a Y variable",
                 choices = colnames(teamData)[5:52],
                 selected = "defTotalYds"
@@ -270,22 +257,22 @@ shinyUI(navbarPage(
             
             ### summary options
             radioButtons(
-              inputId = "summaryTypeTeam",
+              inputId = "summaryType",
               label = "Summary Type",
               # numeric and something else as the numerical summaries
-              choiceValues = c("numericTeam", "teamSum"),
+              choiceValues = c("numeric", "teamSum"),
               choiceNames = c("Numeric", "Team"),
-              selected = "numericTeam",
+              selected = "numeric",
               inline = TRUE
             ),
             
             # numeric summary options
             conditionalPanel(
-              condition = "input.summaryTypeTeam == 'numericTeam'",
+              condition = "input.summaryType == 'numeric'",
               
               # select the variables for the numeric summary table
               pickerInput(
-                inputId = "numVarsTeam",
+                inputId = "numVars",
                 label = "Select the variable(s) to summarize",
                 # excludes week, season, team, win columns
                 choices = colnames(teamData)[5:51],
@@ -297,7 +284,7 @@ shinyUI(navbarPage(
             ),
           
             conditionalPanel(
-              condition = "input.summaryTypeTeam == 'teamSum'",
+              condition = "input.summaryType == 'teamSum'",
               
               numericInput(
                 inputId = "avgRounding",
@@ -307,115 +294,37 @@ shinyUI(navbarPage(
                 max = 10,
                 step = 1
               )
-            ),
+            )
           
-          ), # end of conditional panel for the team data
-          
-          ### game data options
-          conditionalPanel(
-            condition = "input.dataset == 'gameDat'",
-            
-            h3("Universal Variables"),
-            
-            pickerInput(
-              inputId = "seasonFilterGame",
-              label = "Season(s)",
-              choices = unique(gameVisualData$season),
-              selected = unique(gameVisualData$season),
-              multiple = TRUE,
-              options = pickerOptions(actionsBox = TRUE)
-            ),
-            
-            pickerInput(
-              inputId = "weekFilterGame",
-              label = "Week(s)",
-              choices = weeks,
-              selected = weeks,
-              multiple = TRUE,
-              options = pickerOptions(actionsBox = TRUE)
-            ),
-            
-            pickerInput(
-              inputId = "homeTeamFilterGame",
-              label = "Home Team(s)",
-              choices = unique(gameVisualData$homeTeam),
-              selected = unique(gameVisualData$homeTeam),
-              multiple = TRUE,
-              options = pickerOptions(actionsBox = TRUE,
-                                      liveSearch = TRUE)
-            ),
-            
-            pickerInput(
-              inputId = "awayTeamFilterGame",
-              label = "Away Team(s)",
-              choices = sort(unique(gameVisualData$awayTeam)),
-              selected = unique(gameVisualData$awayTeam),
-              multiple = TRUE,
-              options = pickerOptions(actionsBox = TRUE,
-                                      liveSearch = TRUE)
-            ),
-            
-            h3("Graph Options"),
-            
-            pickerInput(
-              inputId = "gameXVar",
-              label = "Select the X variable",
-              choices = colnames(gameVisualData)[4:30],
-              selected = "turnoverDiff",
-              multiple = FALSE
-            ),
-            
-            pickerInput(
-              inputId = "gameYVar",
-              label = "Select the X variable",
-              choices = colnames(gameVisualData)[4:30],
-              selected = "totalYdsDiff",
-              multiple = FALSE
-            ),
-            
-          ) # end of conditional panel for game Data 
-
         ),
         
         # data exploration main panel
         mainPanel(
           # graphs
           h3("Visual Graphs"),
-          
+            
           conditionalPanel(
-            # graphs for the team dataset
-            condition = "input.dataset == 'teamDat'", 
-            
-            conditionalPanel(
-              condition = "input.plotTypeTeam == 'scatterPlotTeam'",
-              plotlyOutput("scatterPlotTeam")
-            ),
-            
-            conditionalPanel(
-              condition = "input.plotTypeTeam == 'lineGraphTeam'",
-              plotlyOutput("lineGraphTeam")
-            ),
+            condition = "input.plotType == 'scatterPlot'",
+            plotlyOutput("scatterPlot")
           ),
           
-
+          conditionalPanel(
+            condition = "input.plotType == 'lineGraph'",
+            plotlyOutput("lineGraph")
+          ),
           
           # numeric summaries
           h3("Numerical Summaries"),
-          
+            
           conditionalPanel(
-            condition = "input.dataset == 'teamDat'",
-            
-            conditionalPanel(
-              condition = "input.summaryTypeTeam == 'numericTeam'",
-              dataTableOutput("numericSummaryTeam")
-            ),
-            
-            conditionalPanel(
-              condition = "input.summaryTypeTeam == 'teamSum'",
-              DTOutput("teamSummary")
-            )
+            condition = "input.summaryType == 'numeric'",
+            dataTableOutput("numericSummary")
           ),
           
+          conditionalPanel(
+            condition = "input.summaryType == 'teamSum'",
+            DTOutput("teamSummary")
+          )
           
         ) # end of main panel for data exploration tab
       ),
