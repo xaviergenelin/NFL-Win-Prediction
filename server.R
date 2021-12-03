@@ -115,7 +115,13 @@ shinyServer(function(input, output,session) {
   })
   
   # data based on user inputs
-  graphDataTeam <- reactive({
+  newTeamData <- reactive({
+    
+    # the graphs show an error in the first second or two
+    # this requires the filters to be available before it shows the graph
+    req(input$seasonsFilterExp, input$teamsFilterExp, input$conferenceFilterExp,
+        input$weeksFilterExp, input$divisionFilterExp)
+    
     teamData %>%
       filter(season %in% input$seasonsFilterExp,
              conference %in% input$conferenceFilterExp,
@@ -128,7 +134,7 @@ shinyServer(function(input, output,session) {
   # line graph
   output$lineGraph <- renderPlotly({
     
-    linePlot <- ggplot(data = graphDataTeam(), aes(x = date, group = team, color = team)) +
+    linePlot <- ggplot(data = newTeamData(), aes(x = date, group = team, color = team)) +
       geom_line(aes_string(y = input$lineVar)) +
       scale_color_manual(values = nflColors, aesthetics = c("color")) +
       labs(title = paste0("Plot of ", input$lineVar))
@@ -140,7 +146,7 @@ shinyServer(function(input, output,session) {
   # scatter plot of team data
   output$scatterPlot <- renderPlotly({
 
-    plot <- ggplot(data = graphDataTeam(), aes_string(x = input$xVar, y = input$yVar)) +
+    plot <- ggplot(data = newTeamData(), aes_string(x = input$xVar, y = input$yVar)) +
       geom_jitter(aes(color = win)) +
       scale_color_manual(values = c("#d7181c", "#2c7bb6")) + 
       labs(title = paste0("Plot of ", input$xVar, " vs. ", input$yVar))
@@ -154,34 +160,26 @@ shinyServer(function(input, output,session) {
   output$numericSummary <- renderDT({
     
     # filter the data based on the universal filters and remove the week, season, and team columns
-    filteredData <- teamData %>%
-      filter(team %in% input$teamsFilterExp,
-             season %in% input$seasonsFilterExp,
-             week %in% input$weeksFilterExp) %>%
+    filteredData <- newTeamData() %>%
       select(-c(week, season, team)) %>%
       select(input$numVars)
     
     numericSum <- do.call(cbind, lapply(filteredData, summary))
     
     as.data.frame(t(numericSum))
+
   })
   
   # the team summary table
   output$teamSummary <- renderDT({
-    
-    newData <- read_csv("data/teamData.csv", show_col_types = FALSE)
-    
-    ############!!!!!!!!!!!!!!!!!!!!!!!!!!!#################### 
-    # something gets messed up here if I use teamData instead of newData
-    teamSumData <- newData %>%
-      filter(team %in% input$teamsFilterExp,
-             season %in% input$seasonsFilterExp,
-             week %in% input$weeksFilterExp) %>%
+
+    teamSumData <- newTeamData() %>%
       select(-c(date,  division, conference, defRushAtt, defPassComp, defPassAtt, defSackYdsLost, 
                 defNetPassYds, offRushAtt, offPassAtt, offSackYdsLost, offNetPassYds, elo, top, 
                 def3rdPerc, def4thPerc, off3rdPerc, off4thPerc, offPenYds))
     
-    teamSumData$win <- as.numeric(teamSumData$win)
+    # changes the win from factor to numeric to be able to be aggregated over the filtered period
+    teamSumData$win <- as.numeric(as.character(teamSumData$win))
     
     results <- teamSumData %>%
       group_by(team, season) %>%
@@ -189,25 +187,23 @@ shinyServer(function(input, output,session) {
         "Wins" = sum(win),
         "Games Played" = length(win),
         # offensive stats
-        "Total Points" = sum(offPoints),
+        "Off Total Points" = sum(offPoints),
         "Off PPG" = round(mean(offPoints), input$avgRounding),
         # defensive stats
         "Total Points Against" = sum(defPoints),
         "Def PPG" = round(mean(defPoints), input$avgRounding)
       ) %>%
-      arrange(season, team)
-    
-    results <- results %>%
+      ungroup() %>%
       group_by(season) %>%
       mutate("Off PPG Rank" = order(order(`Off PPG`, decreasing = TRUE)),
              "Def PPG Rank" = order(order(`Def PPG`, decreasing = FALSE))
       ) 
     
-    results <- results[, c("season", "team", "Wins", "Games Played", "Total Points", "Off PPG", 
-                           "Off PPG Rank", "Total Points Against", "Def PPG", "Def PPG Rank")]
+    results <- results[, c("season", "team", "Wins", "Games Played", "Off Total Points", "Off PPG", 
+                           "Off PPG Rank", "Total Points Against", "Def PPG", "Def PPG Rank")] %>%
+      arrange(season, team)
     
   })
-
   
   ######################
   # Data Modeling Tabs #
@@ -237,7 +233,7 @@ shinyServer(function(input, output,session) {
     
     numericInput(
       inputId = "trainWeeks",
-      label = "Select the number of weeks to use as training",
+      label = "Select the number of prior weeks to use as training",
       value = input$predWeek - 1,
       # use 2 weeks of training to ensure that a team will have data if they select a time during a team's bye week
       # if they want to predict for week 2 then they can only use week 1 data for training

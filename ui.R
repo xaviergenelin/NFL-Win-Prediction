@@ -352,8 +352,8 @@ shinyUI(navbarPage(
             
             "These models will be predicting for a single week in an NFL season. The user will select a single week to predict the 
             winners for, along with the number of weeks that will be used to train the models for classification. The training data
-            will be aggregated throughout to get a better understanding of how a team is playing during that stretch. These aggreagations
-            will be the cummulative average for both the home and away teams. The only statistic that isn't averaged is the Elo value taken
+            will be aggregated throughout to get a better understanding of how a team is playing during that stretch. These aggregations 
+            will be the cumulative average for both the home and away teams. The only statistic that isn't averaged is the Elo value taken
             from 538, which already takes into account how a team has been performing.",
             
             br(),
@@ -364,10 +364,10 @@ shinyUI(navbarPage(
             
             h3("Logistic Regression"),
             
-            "A logistic regression is a model that is used for binary classification. A binary case is when there
-            are only two different classes. The logistic model will calculate the probability, or log odds, of an 
-            event occuring or not. If this probability of the event is more likely to occur, probability of 0.5 or more,
-            then we classify this as the event occuring. If it's below 0.5, then we classify it as the event not occuring.
+            "Logistic regression is a model that is used for binary classification. A binary case is when there
+            are only two different classes. The logistic model will calculate the probability, or log-odds, of an 
+            event occurring or not. If this probability of the event is more likely to occur, probability of 0.5 or more,
+            then we classify this as the event occurring. If it's below 0.5, then we classify it as the event not occurring.
             The logistic model will be modeled with the following formula:",
             
             br(),
@@ -375,16 +375,16 @@ shinyUI(navbarPage(
             
             br(),
             
-            "One of the advantages of this approach is the simplicity and interpretability of it. Because this is one of the more
+            "One of the advantages of this approach is its simplicity and interpretability. Because this is one of the more
             simple models, it is easy to implement it for classification. One of the drawbacks to this is that if you have more
-            features, or variables, than you do observations in the dataset, your model will overfit the data.",
+            features or variables than you do observations in the dataset, your model will overfit the data.",
             
             br(),
             
             h3("Classification Trees"),
             
             "A tree can be used in both classification and regression. For both instances, the algorithm recursively splits the variables
-            into different regions that best describe the data. The data continuely gets split into groups until we reach a point where we 
+            into different regions that best describe the data. The data continually gets split into groups until we reach a point where we 
             can't break this down any further, or when breaking this down wouldn't lead to any additional information gained. The splits 
             are made to reduce the training error as much as possible at that split. We then get 
             an output at the end of all the branches, which are called terminal nodes. Because we're interested in binary classification, 
@@ -394,30 +394,32 @@ shinyUI(navbarPage(
             
             br(),
             
-            "One of the advantages to this method is that the data doesn't have to be normalzied or scaled like with other methods. Some other
+            "One of the advantages of this method is that the data doesn't have to be normalized or scaled like with other methods. Some other
             methods can be thrown off when variables are on different scales than each other and their results can be misleading. A decision tree
             is also another intuitive method and is easy for someone to be able to comprehend how the results are obtained. One of the big disadvantages
             to this method is that any change in the data can vastly change the structure of the model, regardless of how large or small that change is.
-            Depending on the amount of variables, this can also take longer to calculate since it needs to go through all of the variables to determine the 
+            Depending on the number of variables, this can also take longer to calculate since it needs to go through all of the variables to determine the 
             best splits for each branch.",
             
             h3("Random Forests"),
             
             "Random forests expand on the idea of decision trees. It consists of a large number of individual decision trees that operate like an ensemble,
             or a forest. Each of the individual trees split out as described earlier and the most popular vote within that individual tree is that model's 
-            output/prediction. This plays off of the idea of \"power in numbers\". These individual trees create a sample of our training data and each are 
-            restricted to a subset of our variables. Otherwise, they would all get come to the same conclusion. For classification, this majority vote is use
-            as the predicted class and for a regression, the predictions of all the trees get averaged",
+            output/prediction. This plays off of the idea of \"power in numbers\". These individual trees create a sample of our training data and each is 
+            restricted to a subset of our variables. Otherwise, they would all get come to the same conclusion. For classification, this majority vote is used
+            as the predicted class and for regression, the predictions of all the trees get averaged",
             
             br(),
             br(),
             
             "One of the drawbacks to this is that it is not as interpretable as the other two methods. A single tree is easily understandable, and even a small 
-            forest of only 5 or so trees could be interpreted, but the number of trees is typically much larger. Due to the large amount of trees being evaluated 
+            forest of only 5 or so trees could be interpreted, but the number of trees is typically much larger. Due to a large number of trees being evaluated 
             this also increases the amount of time it takes to train a model. One of the big positives is that because they use subsets of the data, this reduces 
             the overall error and improves the accuracy of our prediction. This also automatically takes care of missing values and outliers for us. By using many 
-            individual trees, this is not as sensitive to new data like individual trees are and collectively the trees are less impaced by noise.",
+            individual trees, this is not as sensitive to new data as individual trees are and collectively the trees are less impacted by noise.",
             
+            br(),
+            br(),
           )),
           
 
