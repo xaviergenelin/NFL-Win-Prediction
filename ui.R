@@ -468,11 +468,10 @@ shinyUI(navbarPage(
               inputId = "logVars",
               label = "Logistic model variables",
               choices = sort(modelVars),
-              selected = c("defRushYdsDiff", "defPassYdsDiff", "eloDiff", 
+              selected = c("eloDiff", "defTotalYdsDiff",
                            "defTurnoversDiff", "offPointsDiff", "defPointsDiff", 
-                           "offTurnoversDiff", "defTimesSackedDiff", "offPenYdsDiff", 
-                           "offRushYPCDiff", "defRushYPCDiff", "topDiff",
-                           "offRushYdsDiff", "offPassYdsDiff"),
+                           "offTurnoversDiff", "defTimesSackedDiff", "offNumPenDiff", 
+                           "offRushYPCDiff", "defRushYPCDiff", "topDiff", "offPassYdsDiff"),
               multiple = TRUE,
               options = pickerOptions(actionsBox = TRUE,
                                       liveSearch = TRUE)
@@ -485,11 +484,10 @@ shinyUI(navbarPage(
               inputId = "treeVars",
               label = "Tree model variables",
               choices = sort(modelVars),
-              selected = c("defRushYdsDiff", "defPassYdsDiff", "eloDiff", 
+              selected = c("eloDiff", "defTotalYdsDiff",
                            "defTurnoversDiff", "offPointsDiff", "defPointsDiff", 
-                           "offTurnoversDiff", "defTimesSackedDiff", "offPenYdsDiff", 
-                           "offRushYPCDiff", "defRushYPCDiff", "topDiff",
-                           "offRushYdsDiff", "offPassYdsDiff"),
+                           "offTurnoversDiff", "defTimesSackedDiff", "offNumPenDiff", 
+                           "offRushYPCDiff", "defRushYPCDiff", "topDiff", "offPassYdsDiff"),
               multiple = TRUE,
               options = pickerOptions(actionsBox = TRUE,
                                       liveSearch = TRUE)
@@ -505,27 +503,20 @@ shinyUI(navbarPage(
                 value = 3,
                 step = 1
               ),
-              # puts the inputs side by side to save space
-              style = "display:inline-block"
             ),
+            
             div(
-              numericInput(
-                inputId = "minCp",
-                label = "Min Cp",
-                min = 0, 
-                max = 100,
-                value = 0.01
+              sliderInput(
+                inputId = "cpVals",
+                label = "Select Cp Range",
+                min = 0.001,
+                max = 0.2,
+                value = c(0.001, 0.1),
+                step = 0.001
               ),
               
-              # puts the inputs side by side to save space
-              style = "display:inline-block"
             ),
-            div(
-              uiOutput("maxCpInput"),
-              
-              # puts the inputs side by side to save space
-              style = "display:inline-block"
-            ),
+
             
             
             h3("Random Forest"),
@@ -535,11 +526,10 @@ shinyUI(navbarPage(
               inputId = "rfVars",
               label = "Random Forest model variables",
               choices = sort(modelVars),
-              selected = c("defRushYdsDiff", "defPassYdsDiff", "eloDiff", 
+              selected = c("eloDiff", "defTotalYdsDiff",
                            "defTurnoversDiff", "offPointsDiff", "defPointsDiff", 
-                           "offTurnoversDiff", "defTimesSackedDiff", "offPenYdsDiff", 
-                           "offRushYPCDiff", "defRushYPCDiff", "topDiff",
-                           "offRushYdsDiff", "offPassYdsDiff"),
+                           "offTurnoversDiff", "defTimesSackedDiff", "offNumPenDiff", 
+                           "offRushYPCDiff", "defRushYPCDiff", "topDiff", "offPassYdsDiff"),
               multiple = TRUE,
               options = pickerOptions(actionsBox = TRUE,
                                       liveSearch = TRUE)
@@ -560,7 +550,9 @@ shinyUI(navbarPage(
             actionButton(
               inputId = "trainModels",
               label = "Fit Models"
-            )
+            ),
+            
+
             
           ),
           

@@ -243,27 +243,6 @@ shinyServer(function(input, output,session) {
     )
   })
   
-  output$maxCpInput <- renderUI({
-    
-    # default value at 10
-    value <- 10
-    
-    # check if the minimum cp input is greater than the default
-    # if it is, make the default max value the nearest integer of the minimum value + 1
-    if(input$minCp > value){
-      value <- round(input$minCp + 1, digits = 0)
-    }
-    
-    numericInput(
-      inputId = "maxCp",
-      label = "Max Cp",
-      min = input$minCp,
-      max = 1000,
-      value = value
-    )
-    
-  })
-  
   ##### Model Training #####
   
   observeEvent(input$trainModels, {
@@ -283,10 +262,161 @@ shinyServer(function(input, output,session) {
     # filter the team data set based on universal variables selected
     progress$inc(0.1, detail = "Filtering the dataset")
     
-    nflData <- teamData %>% 
+    ### get the previous week's data as the current week to get the data going into the game
+    
+    # season average data to add to the week 1 for the next season
+    seasonAvgs <- teamData %>%
+      group_by(season, team) %>%
+      summarize(
+        defRushAtt = mean(defRushAtt)
+        ,defRushYds = mean(defRushYds)
+        ,defRushTD = mean(defRushTD)
+        ,defPassComp = mean(defPassComp)
+        ,defPassAtt = mean(defPassAtt)
+        ,defPassYds = mean(defPassYds)
+        ,defPassTD = mean(defPassTD)
+        ,defPassInt = mean(defPassInt)
+        ,defTimesSacked = mean(defTimesSacked)
+        ,defSackYdsLost = mean(defSackYdsLost)
+        ,defFum	 = mean(defFum)
+        ,defFumLost = mean(defFumLost)
+        ,def3rdPerc = mean(def3rdPerc)
+        ,def4thPerc = mean(def4thPerc)
+        ,defCompPerc = mean(defCompPerc)
+        ,defRushYPC = mean(defRushYPC)
+        ,defFirstDowns = mean(defFirstDowns)
+        ,defNetPassYds = mean(defNetPassYds)
+        ,defTotalYds	 = mean(defTotalYds)
+        ,defTurnovers = mean(defTurnovers)
+        ,offRushAtt = mean(offRushAtt)
+        ,offRushYds = mean(offRushYds)
+        ,offRushTD	 = mean(offRushTD)
+        ,offPassComp = mean(offPassComp)
+        ,offPassAtt = mean(offPassAtt)
+        ,offPassYds = mean(offPassYds)
+        ,offPassTD = mean(offPassTD)
+        ,offPassInt = mean(offPassInt)
+        ,offTimesSacked = mean(offTimesSacked)
+        ,offSackYdsLost = mean(offSackYdsLost)
+        ,offFum = mean(offFum)
+        ,offFumLost = mean(offFumLost)
+        ,offNumPen = mean(offNumPen)
+        ,offPenYds = mean(offPenYds)
+        ,top = mean(top)
+        ,off3rdPerc = mean(off3rdPerc)
+        ,off4thPerc = mean(off4thPerc)
+        ,offCompPerc = mean(offCompPerc)
+        ,offRushYPC = mean(offRushYPC)
+        ,offFirstDowns = mean(offFirstDowns)
+        ,offNetPassYds = mean(offNetPassYds)
+        ,offTotalYds = mean(offTotalYds)
+        ,offTurnovers = mean(offTurnovers)
+        ,offTotalPlays = mean(offTotalPlays)
+        ,offPoints = mean(offPoints)
+        ,defPoints = mean(defPoints)
+      ) %>%
+      mutate(week = 1,
+             season = season + 1)
+    
+    # elo from the previous season to use in the lag data 
+    eloData <- teamData %>%
+      select(season, week, team, elo) %>%
+      arrange(season, team, week) %>%
+      group_by(season, team) %>%
+      summarize(across(everything(), last)) %>%
+      ungroup() %>% 
+      mutate(week = 1,
+             season = season + 1) 
+    
+    # game date 
+    dates <- teamData %>% select(season, week, team, date)
+    
+    # get the average data and the elo data together
+    avgData <- merge(seasonAvgs, eloData, by = c("season", "team", "week")) 
+    
+    # get the game date onto the dataset
+    avgData <- merge(avgData, dates, by = c("season", "team", "week"))
+    
+    # first observation for each team
+    firstObs <- teamData %>%
+      group_by(team) %>%
+      arrange(season, team, week) %>%
+      filter(row_number(team) == 1) %>%
+      select(-c(division, conference, win))
+    
+    # add in the first row of data for each team
+    avgData <- rbind(avgData, firstObs)
+    
+    # get the previous week's value except for the first week
+    lagData <- teamData %>%
+      group_by(team) %>%
+      arrange(season, team, week) %>%
+      mutate(
+        defRushAtt = lag(defRushAtt, 1)
+        ,defRushYds = lag(defRushYds, 1)
+        ,defRushTD = lag(defRushTD, 1)
+        ,defPassComp = lag(defPassComp, 1)
+        ,defPassAtt = lag(defPassAtt, 1)
+        ,defPassYds = lag(defPassYds, 1)
+        ,defPassTD = lag(defPassTD, 1)
+        ,defPassInt = lag(defPassInt, 1)
+        ,defTimesSacked = lag(defTimesSacked, 1)
+        ,defSackYdsLost = lag(defSackYdsLost, 1)
+        ,defFum	 = lag(defFum, 1)
+        ,defFumLost = lag(defFumLost, 1)
+        ,def3rdPerc = lag(def3rdPerc, 1)
+        ,def4thPerc = lag(def4thPerc, 1)
+        ,defCompPerc = lag(defCompPerc, 1)
+        ,defRushYPC = lag(defRushYPC, 1)
+        ,defFirstDowns = lag(defFirstDowns, 1)
+        ,defNetPassYds = lag(defNetPassYds, 1)
+        ,defTotalYds	 = lag(defTotalYds, 1)
+        ,defTurnovers = lag(defTurnovers, 1)
+        ,offRushAtt = lag(offRushAtt, 1)
+        ,offRushYds = lag(offRushYds, 1)
+        ,offRushTD	 = lag(offRushTD, 1)
+        ,offPassComp = lag(offPassComp, 1)
+        ,offPassAtt = lag(offPassAtt, 1)
+        ,offPassYds = lag(offPassYds, 1)
+        ,offPassTD = lag(offPassTD, 1)
+        ,offPassInt = lag(offPassInt,1)
+        ,offTimesSacked = lag(offTimesSacked,1)
+        ,offSackYdsLost = lag(offSackYdsLost,1)
+        ,offFum = lag(offFum, 1)
+        ,offFumLost = lag(offFumLost, 1)
+        ,offNumPen = lag(offNumPen, 1)
+        ,offPenYds = lag(offPenYds, 1)
+        ,top = lag(top, 1)
+        ,off3rdPerc = lag(off3rdPerc, 1)
+        ,off4thPerc = lag(off4thPerc, 1)
+        ,offCompPerc = lag(offCompPerc, 1)
+        ,offRushYPC = lag(offRushYPC, 1)
+        ,offFirstDowns = lag(offFirstDowns, 1)
+        ,offNetPassYds = lag(offNetPassYds, 1)
+        ,offTotalYds = lag(offTotalYds, 1)
+        ,offTurnovers = lag(offTurnovers, 1)
+        ,offTotalPlays = lag(offTotalPlays, 1)
+        ,offPoints = lag(offPoints, 1)
+        ,defPoints = lag(defPoints, 1)
+        ,elo = elo
+      ) %>%
+      filter(week != 1)
+    
+    # remove the rows with na values
+    lagData <- lagData[complete.cases(lagData),]
+    
+    # combine the lagged data along with the season
+    teamModelData <- rbind(lagData, avgData) %>% 
+      arrange(season, team,  week) %>% 
+      filter(season != 2015) %>%
+      select(-c(division, conference, win))
+    
+    # filter the data based on the input
+    nflData <- teamModelData %>% 
       filter(season == input$seasonModel, 
              between(week, input$predWeek - input$trainWeeks, input$predWeek))
     
+    # cumulative averages throughout the season
     aggNfl <- nflData %>%
       group_by(team) %>%
       arrange(team, week) %>%
@@ -339,8 +469,7 @@ shinyServer(function(input, output,session) {
         ,offPoints = cummean(offPoints)
         ,defPoints = cummean(defPoints)
       ) %>%
-      arrange(season, team, week) %>%
-      select(-c(win, division, conference))
+      arrange(season, team, week) 
     
     # filter the schedule data set based on the universal variables selected 
     scheduleData <- schedule %>%
@@ -416,7 +545,7 @@ shinyServer(function(input, output,session) {
     ### Logistic Model ###
     
     # train the logistic model
-    progress$inc(0.3, detail = "Fitting Logistic Regression")
+    progress$inc(0.2, detail = "Fitting Logistic Regression")
 
     logModel <- train(homeWin ~ .,
                       data = trainData[, c(c("homeWin"), input$logVars)],
@@ -426,7 +555,7 @@ shinyServer(function(input, output,session) {
                        )
 
     # train the rf model
-    progress$inc(0.5, detail = "Fitting Random Forest")
+    progress$inc(0.4, detail = "Fitting Random Forest")
 
     mtryVals <- as.numeric(input$mtryValues)
 
@@ -438,9 +567,11 @@ shinyServer(function(input, output,session) {
 
 
     # train the tree model
-    progress$inc(0.7, detail = "Fitting Classification Tree")
+    progress$inc(0.6, detail = "Fitting Classification Tree")
 
-    cpVals <- seq(input$minCp, input$maxCp, length.out = input$numCp)
+    possibleCps <- seq(from = input$cpVals[1], to = input$cpVals[2], by = 0.001)
+    
+    cpVals <- sample(possibleCps, size = input$numCp)
 
     treeModel <- train(homeWin ~ .,
                        data = trainData[, c(c("homeWin"), input$treeVars)],
@@ -449,7 +580,7 @@ shinyServer(function(input, output,session) {
                        tuneGrid = expand.grid(cp = cpVals))
 
     # test the models on the test set
-    progress$inc(0.85, detail = "Evaluating the test set performacne")
+    progress$inc(0.8, detail = "Evaluating the test set performacne")
 
     logPred <- predict(logModel, testData, type = "raw")
     rfPred <- predict(rfModel, testData, type = "raw")
