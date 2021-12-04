@@ -379,15 +379,18 @@ shinyUI(navbarPage(
             
             "The goal of the model section is to determine who will win an NFL game. This is done by classification to see if the home 
             team wins or loses (away team wins). For simplicity, ties aren't considered for this data set to keep it as a binary outcome.
-            There will be 3 different types of models that will 
-            be used to classify a winner for a game: logistic regression, random forests, and a classification tree",
+            A binary case is when there are only two different classes. There will be 3 different types of models that will 
+            be used to classify a winner for a game: logistic regression, a classification tree, and random forests.",
             
             br(), 
             br(),
             
-            "These models will be predicting for a single week in an NFL season. The user will select a single week to predict the 
-            winners for, along with the number of weeks that will be used to train the models for classification. The training data
-            will be aggregated throughout to get a better understanding of how a team is playing during that stretch. These aggregations 
+            "These models will be used for predicting for a single week in an NFL season. The user will select a week to predict the 
+            winners for, along with the number of prior weeks that will be used to train the models for classification. 
+            The data that will be used for the models takes the previous week's stats to give an idea of the matchup going into the game based
+            on how each team did previously. In the case of it being the first week of the season, the previous season's average data is used and
+            for the first week in the data avaiable, the 2002 season, the data isn't manipulated at all. Once the user selects the number of prior
+            weeks to be used, the data will be aggregated to get a better understanding of how a team is playing during that stretch. These aggregations 
             will be the cumulative average for both the home and away teams. The only statistic that isn't averaged is the Elo value taken
             from 538, which already takes into account how a team has been performing.",
             
@@ -399,8 +402,7 @@ shinyUI(navbarPage(
             
             h3("Logistic Regression"),
             
-            "Logistic regression is a model that is used for binary classification. A binary case is when there
-            are only two different classes. The logistic model will calculate the probability, or log-odds, of an 
+            "Logistic regression is a model that is used for binary classification. The logistic model will calculate the probability, or log-odds, of an 
             event occurring or not. If this probability of the event is more likely to occur, probability of 0.5 or more,
             then we classify this as the event occurring. If it's below 0.5, then we classify it as the event not occurring.
             The logistic model will be modeled with the following formula:",
@@ -412,7 +414,7 @@ shinyUI(navbarPage(
             
             "One of the advantages of this approach is its simplicity and interpretability. Because this is one of the more
             simple models, it is easy to implement it for classification. One of the drawbacks to this is that if you have more
-            features or variables than you do observations in the dataset, your model will overfit the data.",
+            features/variables than you do observations in the dataset, your model will overfit the data.",
             
             br(),
             
@@ -441,14 +443,14 @@ shinyUI(navbarPage(
             "Random forests expand on the idea of decision trees. It consists of a large number of individual decision trees that operate like an ensemble,
             or a forest. Each of the individual trees split out as described earlier and the most popular vote within that individual tree is that model's 
             output/prediction. This plays off of the idea of \"power in numbers\". These individual trees create a sample of our training data and each is 
-            restricted to a subset of our variables. Otherwise, they would all get come to the same conclusion. For classification, this majority vote is used
+            restricted to a subset of our variables. Otherwise, they would all get come to the same conclusion. For classification, a majority vote is used
             as the predicted class and for regression, the predictions of all the trees get averaged",
             
             br(),
             br(),
             
             "One of the drawbacks to this is that it is not as interpretable as the other two methods. A single tree is easily understandable, and even a small 
-            forest of only 5 or so trees could be interpreted, but the number of trees is typically much larger. Due to a large number of trees being evaluated 
+            forest of only 5 or so trees could be interpreted, but the number of trees is typically much larger. Due to a large number of trees being evaluated, 
             this also increases the amount of time it takes to train a model. One of the big positives is that because they use subsets of the data, this reduces 
             the overall error and improves the accuracy of our prediction. This also automatically takes care of missing values and outliers for us. By using many 
             individual trees, this is not as sensitive to new data as individual trees are and collectively the trees are less impacted by noise.",

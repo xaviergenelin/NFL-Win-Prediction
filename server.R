@@ -166,7 +166,16 @@ shinyServer(function(input, output,session) {
     
     numericSum <- do.call(cbind, lapply(filteredData, summary))
     
-    as.data.frame(t(numericSum))
+    numSum <- as.data.frame(t(numericSum))
+
+    numSum$`Min.` <- round(numSum$`Min.`, 2)
+    numSum$`1st Qu.` <- round(numSum$`1st Qu.`, 2)
+    numSum$Median <- round(numSum$Median, 2)
+    numSum$Mean <- round(numSum$Mean, 2)
+    numSum$`3rd Qu.` <- round(numSum$`3rd Qu.`, 2)
+    numSum$`Max.` <- round(numSum$`Max.`, 2)
+    
+    numSum
 
   })
   
