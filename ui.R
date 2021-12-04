@@ -293,6 +293,41 @@ shinyUI(navbarPage(
                 min = 0,
                 max = 10,
                 step = 1
+              ),
+              
+              pickerInput(
+                inputId = "teamCols",
+                label = "Select the column(s)",
+                choices = c("season", "team", "Wins", "Games", 
+                            "Total Points", "Off PPG", "Off PPG Rank", 
+                            "Off Rush Yds/G", "Off Rush Yds/G Rank",
+                            "Off Pass Yds/G", "Off Pass Yds/G Rank",
+                            "TOP/G", "TOP/G Rank",
+                            "Total Penalties", "Penalties/G", "Penalties/G Rank",
+                            "Penalty Yds/G", "Penalty Yds/G Rank",
+                            "Total Giveaways", "Giveaways/G", "Giveaways/G Rank",
+                            "Total Points Against", "Def PPG", "Def PPG Rank",
+                            "Def Rush Yds/G", "Def Rush Yds/G Rank",
+                            "Def Pass Yds/G", "Def Pass Yds/G Rank",
+                            "Total Def Sacks", "Def Sacks/G", "Sacks/G Rank",
+                            "Total Takeaways", "Takeaways/G", "Takeaways/G Rank"),
+                selected = c("season", "team", "Wins", "Games", 
+                             "Total Points", "Off PPG", "Off PPG Rank", 
+                             "Off Rush Yds/G", "Off Rush Yds/G Rank",
+                             "Off Pass Yds/G", "Off Pass Yds/G Rank",
+                             "TOP/G", "TOP/G Rank",
+                             "Total Penalties", "Penalties/G", "Penalties/G Rank",
+                             "Penalty Yds/G", "Penalty Yds/G Rank",
+                             "Total Giveaways", "Giveaways/G", "Giveaways/G Rank",
+                             "Total Points Against", "Def PPG", "Def PPG Rank",
+                             "Def Rush Yds/G", "Def Rush Yds/G Rank",
+                             "Def Pass Yds/G", "Def Pass Yds/G Rank",
+                             "Total Def Sacks", "Def Sacks/G", "Sacks/G Rank",
+                             "Total Takeaways", "Takeaways/G", "Takeaways/G Rank"),
+                multiple = TRUE,
+                options = pickerOptions(actionsBox = TRUE,
+                                        liveSearch = TRUE)
+                
               )
             )
           

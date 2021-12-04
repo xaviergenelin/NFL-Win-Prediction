@@ -175,33 +175,86 @@ shinyServer(function(input, output,session) {
 
     teamSumData <- newTeamData() %>%
       select(-c(date,  division, conference, defRushAtt, defPassComp, defPassAtt, defSackYdsLost, 
-                defNetPassYds, offRushAtt, offPassAtt, offSackYdsLost, offNetPassYds, elo, top, 
-                def3rdPerc, def4thPerc, off3rdPerc, off4thPerc, offPenYds))
+                defNetPassYds, offRushAtt, offPassAtt, offSackYdsLost, offNetPassYds, elo, 
+                def3rdPerc, def4thPerc, off3rdPerc, off4thPerc))
     
     # changes the win from factor to numeric to be able to be aggregated over the filtered period
     teamSumData$win <- as.numeric(as.character(teamSumData$win))
     
     results <- teamSumData %>%
+      # first aggregate by team and season to get individual team data
       group_by(team, season) %>%
       summarize(
         "Wins" = sum(win),
-        "Games Played" = length(win),
-        # offensive stats
-        "Off Total Points" = sum(offPoints),
+        "Games" = length(win),
+        # offensive points and ppg
+        "Total Points" = sum(offPoints),
         "Off PPG" = round(mean(offPoints), input$avgRounding),
-        # defensive stats
+        # defensive points and ppg
         "Total Points Against" = sum(defPoints),
-        "Def PPG" = round(mean(defPoints), input$avgRounding)
+        "Def PPG" = round(mean(defPoints), input$avgRounding),
+        # offensive rush yds per game
+        "Off Rush Yds/G" = round(mean(offRushYds), input$avgRounding),
+        # defensive rush yds per game
+        "Def Rush Yds/G" = round(mean(defRushYds), input$avgRounding),
+        # offensive pass yds per game
+        "Off Pass Yds/G" = round(mean(offPassYds), input$avgRounding),
+        # defensive pass yds per game
+        "Def Pass Yds/G" = round(mean(defPassYds), input$avgRounding),
+        # defensive sacks total and per game
+        "Total Def Sacks" = sum(defTimesSacked),
+        "Def Sacks/G" = round(mean(defTimesSacked), input$avgRounding),
+        # def ints total and per game
+        "Total Takeaways" = sum(defTurnovers),
+        "Takeaways/G" = round(mean(defTurnovers), input$avgRounding),
+        # total and avg penalties per game
+        "Total Penalties" = sum(offNumPen),
+        # avg penalty yds per game
+        "Penalty Yds/G" = round(mean(offPenYds), input$avgRounding),
+        # total giveaways
+        "Total Giveaways" = sum(offTurnovers),
+        "Giveaways/G" = round(mean(offTurnovers), input$avgRounding),
+        "TOP/G" = round(mean(top), input$avgRounding)
+        
       ) %>%
+      # remove the groups to get data by season
       ungroup() %>%
       group_by(season) %>%
+      # ranks of the total/avgs computed above to compare the teams and seasons that were selected
       mutate("Off PPG Rank" = order(order(`Off PPG`, decreasing = TRUE)),
-             "Def PPG Rank" = order(order(`Def PPG`, decreasing = FALSE))
+             "Def PPG Rank" = order(order(`Def PPG`, decreasing = FALSE)),
+             "Off Rush Yds/G Rank" = order(order(`Off Rush Yds/G`, decreasing = TRUE)),
+             "Def Rush Yds/G Rank" = order(order(`Def Rush Yds/G`, decreasing = FALSE)),
+             "Off Pass Yds/G Rank" = order(order(`Off Pass Yds/G`, decreasing = TRUE)),
+             "Def Pass Yds/G Rank" = order(order(`Def Pass Yds/G`, decreasing = FALSE)),   
+             "Sacks/G Rank" = order(order(`Def Sacks/G`, decreasing = TRUE)),
+             "Takeaways/G Rank" = order(order(`Takeaways/G`, decreasing = TRUE)),
+             "Penalty Yds/G Rank" = order(order(`Penalty Yds/G`, decreasing = FALSE)),
+             "Penalties/G" = round(`Total Penalties`/`Games`, input$avgRounding),
+             "Penalties/G Rank" = order(order(`Penalties/G`, decreasing = FALSE)),
+             "Giveaways/G Rank" = order(order(`Giveaways/G`, decreasing = FALSE)),
+             "TOP/G Rank" = order(order(`TOP/G`, decreasing = TRUE))
       ) 
     
-    results <- results[, c("season", "team", "Wins", "Games Played", "Off Total Points", "Off PPG", 
-                           "Off PPG Rank", "Total Points Against", "Def PPG", "Def PPG Rank")] %>%
-      arrange(season, team)
+    results <- results[, c("season", "team", "Wins", "Games", 
+                           # offensive stats
+                           "Total Points", "Off PPG", "Off PPG Rank", 
+                           "Off Rush Yds/G", "Off Rush Yds/G Rank",
+                           "Off Pass Yds/G", "Off Pass Yds/G Rank",
+                           "TOP/G", "TOP/G Rank",
+                           "Total Penalties", "Penalties/G", "Penalties/G Rank",
+                           "Penalty Yds/G", "Penalty Yds/G Rank",
+                           "Total Giveaways", "Giveaways/G", "Giveaways/G Rank",
+                           # defensive stats
+                           "Total Points Against", "Def PPG", "Def PPG Rank",
+                           "Def Rush Yds/G", "Def Rush Yds/G Rank",
+                           "Def Pass Yds/G", "Def Pass Yds/G Rank",
+                           "Total Def Sacks", "Def Sacks/G", "Sacks/G Rank",
+                           "Total Takeaways", "Takeaways/G", "Takeaways/G Rank"
+    )] %>%
+      arrange(season, team) 
+    
+    results %>% select(input$teamCols)
     
   })
   
