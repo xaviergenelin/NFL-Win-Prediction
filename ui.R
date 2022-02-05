@@ -11,6 +11,7 @@ library(shinyWidgets)
 library(plotly)
 library(rattle)
 library(shinythemes)
+library(caret)
 
 # link to the dataset
 originalDataLink <- "https://www4.stat.ncsu.edu/~online/datasets/"

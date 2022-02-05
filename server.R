@@ -11,6 +11,7 @@ library(shinyWidgets)
 library(plotly)
 library(rattle)
 library(shinythemes)
+library(caret)
 
 # load in the team data
 teamData <- read_csv("data/teamData.csv", show_col_types = FALSE)
